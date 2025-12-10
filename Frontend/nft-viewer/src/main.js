@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import './assets/main.css'
 import { clerkPlugin } from '@clerk/vue'
+import './assets/tailwind.css'
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 

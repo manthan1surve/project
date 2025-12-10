@@ -1,12 +1,22 @@
-@import './base.css';
+/* main.css */
+@import "./base.css";
 
+/* Make the app fill the viewport and remove the starter grid layout */
+html,
+body,
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Keep normal flow layout – no flex/grid on body */
+body {
   font-weight: normal;
 }
 
+/* Optional: keep the default link style if you want it */
 a,
 .green {
   text-decoration: none;
@@ -18,18 +28,5 @@ a,
 @media (hover: hover) {
   a:hover {
     background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
   }
 }

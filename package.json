@@ -19,7 +19,8 @@
   "license": "ISC",
   "workspaces": [
     "Frontend/nft-viewer",
-    "my-hardhat-project"],
+    "my-hardhat-project"
+  ],
   "bugs": {
     "url": "https://github.com/harshwar/Project/issues"
   },

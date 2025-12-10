@@ -27,8 +27,8 @@
         import { CONTRACT_ABI } from './abi.js';
 
         // --- Constants & Configuration ---
-        const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-        const HARDHAT_CHAIN_ID = '31337';
+        const CONTRACT_ADDRESS = "0xDb52e700e38f5AAC343e7fAE9254605b00fB6eB5";
+        const HARDHAT_CHAIN_ID = '0x7a69';
         const UPLOAD_SERVER_URL = 'http://localhost:3001/upload';
         
         // Helper function to update the status text in the UI
@@ -53,11 +53,11 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             const { chainId } = await provider.getNetwork();
 
-            if (chainId !== BigInt(HARDHAT_CHAIN_ID)) {
+            if (chainId !== BigInt(31337)) {
                 try {
                     await window.ethereum.request({
                         method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: `0x${Number(HARDHAT_CHAIN_ID).toString(16)}` }],
+                        params: [{ chainId: HARDHAT_CHAIN_ID }],
                     });
                 } catch (error) {
                     if (error.code === 4902) {
