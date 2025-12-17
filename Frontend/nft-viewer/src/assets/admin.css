@@ -1,0 +1,197 @@
+/* ===== DASHBOARD LAYOUT ===== */
+.dashboard-shell {
+  max-width: 1200px;
+  margin:  auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 24px;
+}
+
+/* ===== STATS ===== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.stat-card {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* ===== GLASS ===== */
+.glass {
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.9),
+    rgba(15, 23, 42, 0.65)
+  );
+  backdrop-filter: blur(18px);
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ===== TABLE ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 8px 10px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  text-align: left;
+}
+
+/* ===== INPUTS ===== */
+.input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: none;
+  outline: none;
+}
+
+/* ===== FORM ===== */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* ===== BUTTONS ===== */
+.btn-primary {
+  background: #6366f1;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 600;
+}
+
+.btn-danger {
+  background: #ef4444;
+  padding: 8px 14px;
+  border-radius: 10px;
+}
+
+/* ===== UTIL ===== */
+.mono {
+  font-family: monospace;
+}
+
+.status {
+  background: rgba(255,255,255,0.15);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.issued-section {
+  max-height: 260px;
+  overflow-y: auto;
+}
+.select-glass {
+  background: rgba(255,255,255,0.08);
+}
+/* ================= ANIMATION SYSTEM ================= */
+
+/* Base fade + slide */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Soft scale on hover */
+@keyframes softPop {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.015);
+  }
+}
+
+/* Entry animation utility */
+.animate-in {
+  animation: fadeUp 0.55s ease-out both;
+}
+
+/* Delay helpers */
+.delay-1 { animation-delay: 0.05s; }
+.delay-2 { animation-delay: 0.12s; }
+.delay-3 { animation-delay: 0.18s; }
+.delay-4 { animation-delay: 0.25s; }
+.delay-5 { animation-delay: 0.32s; }
+
+/* Hover micro-interactions */
+.glass {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 55px rgba(0,0,0,0.55);
+}
+
+/* Button animation */
+.btn-primary,
+.btn-danger {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary:hover,
+.btn-danger:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary:active,
+.btn-danger:active {
+  transform: translateY(0);
+}
+
+/* Table row hover */
+.table tbody tr {
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background: rgba(255,255,255,0.05);
+  transform: scale(1.01);
+}
+
+/* Dropdown focus animation */
+.select-glass {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}

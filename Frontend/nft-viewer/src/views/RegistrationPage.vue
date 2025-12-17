@@ -1,159 +1,253 @@
-<template>
-  <div class="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6">
-    <SignedOut>
-      <div class="flex items-center justify-center h-screen">
-        <SignIn />
-      </div>
-    </SignedOut>
+  <template>
+    <div class="relative min-h-screen flex items-center justify-center px-6 overflow-hidden">
+      <!-- Background Video -->
+  <video
+    class="absolute inset-0 w-full h-full object-cover z-0"
+    autoplay
+    muted
+    loop
+    playsinline
+  >
+    <source src="/bg-video.mp4" type="video/mp4" />
+  </video>
 
-    <SignedIn>
-      <div class="max-w-3xl mx-auto">
-        <div class="bg-white/80 backdrop-blur-md shadow-lg rounded-2xl overflow-hidden">
-          <div class="md:flex">
-            <!-- Left panel (illustration + title) -->
-            <div class="hidden md:flex md:w-1/3 bg-linear-to-br from-indigo-600 to-indigo-500 text-white p-8 flex-col justify-center">
-              <h2 class="text-2xl font-semibold mb-2">Register New Student</h2>
-              <p class="text-sm opacity-90">Add student details and link their Ethereum address for on-chain certificate issuance.</p>
+  <!-- Dark overlay for contrast -->
+  <div class="absolute inset-0 bg-black/50 z-0"></div>
 
-              <div class="mt-6">
-                <!-- Simple decorative SVG -->
-                <svg class="w-28 h-28 opacity-90" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="currentColor" stroke-width="0.5"/>
-                </svg>
+
+      <!-- Glow blobs -->
+      <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/30 blur-3xl rounded-full"></div>
+      <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-fuchsia-500/20 blur-3xl rounded-full"></div>
+      <!-- Admin Login -->
+  <div class="absolute top-10 right-6 z-20">
+    <button
+      @click="goToAdminLogin"
+      class="admin-btn"
+    >
+      Admin Login
+    </button>
+  </div>
+
+
+      <SignedOut>
+        <div class="relative z-10">
+          <SignIn />
+        </div>
+      </SignedOut>
+
+      <SignedIn>
+        <div class="relative z-10 w-full max-w-4xl">
+          <!-- Glass Card -->
+          <div class="glass-card overflow-hidden">
+            <div class="md:flex">
+              <!-- Right Panel -->
+              <div class="w-full p-8">
+                <div class="flex items-center justify-between mb-6">
+                  <h1 class="text-xl md:text-2xl font-semibold text-white">
+                    Student Registration
+                  </h1>
+                  <span v-if="successMessage" class="text-sm text-emerald-300">
+                    Saved
+                  </span>
+                </div>
+
+                <form @submit.prevent="handleRegister" class="space-y-6">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="label">Full Name</label>
+                      <input
+                        v-model="formData.fullName"
+                        required
+                        class="input-glass"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="label">Student ID</label>
+                      <input
+                        v-model="formData.rollno"
+                        required
+                        class="input-glass"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="label">Course</label>
+                      <input
+                        v-model="formData.courseName"
+                        required
+                        class="input-glass"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="label">Year</label>
+                      <select v-model="formData.year" class="input-glass">
+                        <option>FY</option>
+                        <option>SY</option>
+                        <option>TY</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between gap-4 pt-2">
+                    <div class="flex gap-3">
+                      <button
+                        type="submit"
+                        :disabled="isLoading"
+                        class="btn-primary"
+                      >
+                        {{ isLoading ? 'Registering…' : 'Register Student' }}
+                      </button>
+
+                      <button
+                        type="button"
+                        @click="resetForm"
+                        class="btn-secondary"
+                      >
+                        Reset
+                      </button>
+                    </div>
+
+                    <span class="text-xs text-white/60">
+                      All fields required
+                    </span>
+                  </div>
+
+                  <div v-if="successMessage" class="alert-success">
+                    {{ successMessage }}
+                  </div>
+
+                  <div v-if="errorMessage" class="alert-error">
+                    {{ errorMessage }}
+                  </div>
+                </form>
               </div>
-            </div>
-
-            <!-- Form panel -->
-            <div class="w-full md:w-2/3 p-8">
-              <div class="flex items-center justify-between">
-                <h1 class="text-xl md:text-2xl font-bold text-slate-800">Register Student</h1>
-                <div v-if="successMessage" class="text-sm text-green-700">Saved</div>
-              </div>
-
-              <form @submit.prevent="handleRegister" class="mt-6 space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label for="fullName" class="block text-sm font-medium text-slate-600">Full Name</label>
-                    <input v-model="formData.fullName" id="fullName" type="text" required
-                           class="mt-1 block w-full rounded-lg border border-slate-200 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"/>
-                  </div>
-
-                  <div>
-                    <label for="studentId" class="block text-sm font-medium text-slate-600">Student ID</label>
-                    <input v-model="formData.studentId" id="studentId" type="text" required
-                           class="mt-1 block w-full rounded-lg border border-slate-200 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"/>
-                  </div>
-
-                  <div>
-                    <label for="courseName" class="block text-sm font-medium text-slate-600">Course</label>
-                    <input v-model="formData.courseName" id="courseName" type="text" required
-                           class="mt-1 block w-full rounded-lg border border-slate-200 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"/>
-                  </div>
-
-                  <div>
-                    <label for="year" class="block text-sm font-medium text-slate-600">Year</label>
-                    <select v-model="formData.year" id="year" required
-                            class="mt-1 block w-full rounded-lg border border-slate-200 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                      <option>FY</option>
-                      <option>SY</option>
-                      <option>TY</option>
-                    </select>
-                  </div>
-
-                  <div class="md:col-span-2">
-                    <label for="ethAddress" class="block text-sm font-medium text-slate-600">Ethereum Address</label>
-                    <input v-model="formData.ethAddress" id="ethAddress" type="text" required placeholder="0x..."
-                           class="mt-1 block w-full rounded-lg border border-slate-200 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"/>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between gap-4">
-                  <div class="flex items-center space-x-3">
-                    <button type="submit" :disabled="isLoading"
-                            class="inline-flex items-center gap-3 rounded-lg px-5 py-2.5 bg-indigo-600 text-white font-medium shadow hover:bg-indigo-700 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                      <svg v-if="isLoading" class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-opacity="0.3" />
-                        <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-                      </svg>
-
-                      <span v-if="!isLoading">Register Student</span>
-                      <span v-else>Registering...</span>
-                    </button>
-
-                    <button type="button" @click="resetForm" class="rounded-lg px-4 py-2 border border-slate-200 text-sm">Reset</button>
-                  </div>
-
-                  <div class="text-sm text-slate-500">All fields are required.</div>
-                </div>
-
-                <div>
-                  <div v-if="successMessage" class="rounded-md bg-green-50 border border-green-100 p-3 text-green-800">{{ successMessage }}</div>
-                  <div v-if="errorMessage" class="rounded-md bg-red-50 border border-red-100 p-3 text-red-800">{{ errorMessage }}</div>
-                </div>
-              </form>
-
-              <div class="mt-6 text-xs text-slate-400">Tip: Use a valid Ethereum address (0x... ). The backend should verify and store the address securely.</div>
             </div>
           </div>
         </div>
-      </div>
-    </SignedIn>
-  </div>
-</template>
+      </SignedIn>
+    </div>
+  </template>
 
-<script setup>
-import { ref } from 'vue';
-import { SignIn, SignedIn, SignedOut } from '@clerk/vue';
+  <script setup>
+import { ref } from 'vue'
+import { SignIn, SignedIn, SignedOut } from '@clerk/vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const formData = ref({
-  fullName: '',
-  studentId: '',
-  courseName: 'Computer Science',
-  year: 'FY',
-  ethAddress: '',
-});
+  fullName: 'Manthan Surve',
+  rollno: '25TBSCIT062',
+  courseName: 'Information Technology',
+  year: 'TY'
+})
 
-const isLoading = ref(false);
-const successMessage = ref('');
-const errorMessage = ref('');
+const isLoading = ref(false)
+const successMessage = ref('')
+const errorMessage = ref('')
 
 function resetForm() {
-  formData.value = { fullName: '', studentId: '', courseName: 'Computer Science', year: 'FY', ethAddress: '' };
-  successMessage.value = '';
-  errorMessage.value = '';
+  formData.value = {
+    fullName: '',
+    rollno: '',
+    courseName: '',
+    year: ''
+  }
+  successMessage.value = ''
+  errorMessage.value = ''
+}
+
+/* ✅ ADMIN LOGIN ROUTE (MUST BE TOP-LEVEL) */
+function goToAdminLogin() {
+  router.push('/admin-login')
 }
 
 async function handleRegister() {
-  // Basic client-side validation (example)
-  if (!/^0x[a-fA-F0-9]{40}$/.test(formData.value.ethAddress)) {
-    errorMessage.value = 'Please enter a valid Ethereum address.';
-    return;
-  }
-
-  isLoading.value = true;
-  successMessage.value = '';
-  errorMessage.value = '';
+  isLoading.value = true
+  successMessage.value = ''
+  errorMessage.value = ''
 
   try {
-    const response = await fetch('http://localhost:3000/api/register-student', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData.value),
-    });
+    // Fake API delay
+    await new Promise(resolve => setTimeout(resolve, 1200))
 
-    const data = await response.json();
-
-    if (response.ok) {
-      successMessage.value = `Student "${data.student.full_name}" registered successfully!`;
-      resetForm();
-    } else {
-      throw new Error(data.error || 'Registration failed.');
+    const dummyStudent = {
+      fullName: formData.value.fullName,
+      rollno: formData.value.rollno,
+      courseName: formData.value.courseName,
+      year: formData.value.year,
+      registeredAt: new Date().toISOString()
     }
+
+    localStorage.setItem('student', JSON.stringify(dummyStudent))
+
+    successMessage.value = 'Student registered successfully'
+    resetForm()
+
+    router.push('/student-dashboard')
   } catch (err) {
-    errorMessage.value = err.message || String(err);
-    console.error('Registration error:', err);
+    errorMessage.value = err.message || 'Registration failed'
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
 }
 </script>
+
+
+  <style scoped>
+  /* Glass Card */
+  .glass-card {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl;
+  }
+
+  /* Labels */
+  .label {
+    @apply block text-sm text-white/70 mb-1;
+  }
+
+  /* Glass Inputs */
+  .input-glass {
+    @apply w-full rounded-lg
+          bg-white/10 backdrop-blur-md
+          text-white
+          px-4 py-2
+          border border-white/20
+          outline-none
+          focus:ring-2 focus:ring-indigo-400;
+  }
+  .admin-btn {
+  @apply px-4 py-2 rounded-lg
+         bg-black/40 backdrop-blur-md
+         border border-white/20
+         text-white text-sm font-medium
+         shadow-lg
+         hover:bg-white/20
+         hover:border-white/40
+         transition;
+}
+
+
+  /* Buttons */
+  .btn-primary {
+    @apply px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500
+          text-white font-medium transition disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20
+          text-white transition;
+  }
+
+  /* Alerts */
+  .alert-success {
+    @apply bg-emerald-500/20 border border-emerald-400/40
+          text-emerald-200 p-4 rounded-xl;
+  }
+
+  .alert-error {
+    @apply bg-red-500/20 border border-red-400/40
+          text-red-200 p-4 rounded-xl;
+  }
+  </style>
