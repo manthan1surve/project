@@ -1,13 +1,17 @@
-// backend/server.js
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
+const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
 const { Pool } = require('pg');
 
 const app = express();
-const port = 3000;
+const port = 3001;
+const upload = multer({ dest: 'uploads/' });
 
+// --- Database Setup ---
 const dbPool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
@@ -16,57 +20,91 @@ const dbPool = new Pool({
   database: process.env.DB_NAME,
 });
 
+// --- Pinata Configuration ---
+const PINATA_API_KEY = process.env.PINATA_API_KEY;
+const PINATA_SECRET_API_KEY = process.env.PINATA_API_SECRET;
+const PINATA_BASE_URL = "https://api.pinata.cloud/pinning";
+
 app.use(cors());
 app.use(express.json());
 
-// --- API ROUTES ---
+// --- Pinata Helpers ---
+async function pinFileToIPFS(filePath) {
+  const formData = new FormData();
+  formData.append("file", fs.createReadStream(filePath));
+  
+  const response = await axios.post(`${PINATA_BASE_URL}/pinFileToIPFS`, formData, {
+    headers: {
+      ...formData.getHeaders(),
+      pinata_api_key: PINATA_API_KEY,
+      pinata_secret_api_key: PINATA_SECRET_API_KEY,
+    },
+  });
+  return response.data.IpfsHash;
+}
 
-// Student lookup endpoint (we'll keep this)
-app.get('/api/find-student', async (req, res) => {
-  // ... (code from before)
-});
+async function pinJSONToIPFS(jsonMetadata) {
+  const response = await axios.post(`${PINATA_BASE_URL}/pinJSONToIPFS`, jsonMetadata, {
+    headers: {
+      pinata_api_key: PINATA_API_KEY,
+      pinata_secret_api_key: PINATA_SECRET_API_KEY,
+    },
+  });
+  return response.data.IpfsHash;
+}
 
+// --- Routes ---
 
-// NEW: Student registration endpoint
-// backend/server.js
-
-// ... (imports and db setup are the same) ...
-
-// backend/server.js
-// ... (imports and db setup are the same) ...
-
-app.post('/api/register-student', async (req, res) => {
+// NFT Upload Route (This handles the IPFS part)
+app.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    // UPDATED: Get student details without clerkId
-    const { fullName, studentId, courseName, year, ethAddress } = req.body;
+    const file = req.file;
+    if (!file) return res.status(400).json({ success: false, message: "No file uploaded." });
 
-    if (!fullName || !studentId || !ethAddress) {
-      return res.status(400).json({ error: 'Required fields are missing.' });
-    }
+    // 1. Upload Image to IPFS
+    const imageHash = await pinFileToIPFS(file.path);
+    fs.unlinkSync(file.path); // Delete local temp file
 
-    // UPDATED: Insert a placeholder for clerk_user_id
-    const placeholderClerkId = `manual_${studentId}_${Date.now()}`;
+    // 2. Create Metadata
+    const metadata = {
+      name: "Student Certificate NFT",
+      description: "Verification of Course Completion",
+      image: `ipfs://${imageHash}`,
+      attributes: [{ trait_type: "Type", value: "Academic" }]
+    };
 
-    const newStudent = await dbPool.query(
-      `INSERT INTO students (full_name, student_id_number, course_name, year, ethereum_address, clerk_user_id)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [fullName, studentId, courseName, year, ethAddress, placeholderClerkId]
-    );
-
-    res.status(201).json({
-      message: 'Student registered successfully!',
-      student: newStudent.rows[0],
+    // 3. Upload Metadata to IPFS
+    const metadataHash = await pinJSONToIPFS(metadata);
+    
+    res.json({ 
+      success: true, 
+      tokenURI: `ipfs://${metadataHash}` 
     });
-
   } catch (error) {
-    console.error('Error registering student:', error);
-    res.status(500).json({ error: 'An error occurred during registration.' });
+    console.error("IPFS Upload Error:", error.response ? error.response.data : error.message);
+    res.status(500).json({ success: false, message: "Failed to upload to Pinata." });
   }
 });
 
+// Student Registration Route (This handles the DB part)
+app.post('/api/register-student', async (req, res) => {
+  try {
+    const { fullName, studentId, courseName, year, ethAddress } = req.body;
+    const placeholderClerkId = `manual_${studentId}_${Date.now()}`;
+    
+    const newStudent = await dbPool.query(
+      `INSERT INTO students (full_name, student_id_number, course_name, year, ethereum_address, clerk_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [fullName, studentId, courseName, year, ethAddress, placeholderClerkId]
+    );
+    
+    res.status(201).json({ message: 'Student registered in database!', student: newStudent.rows[0] });
+  } catch (error) {
+    console.error("DB Error:", error);
+    res.status(500).json({ error: 'Database registration failed.' });
+  }
+});
 
-// --- Server Startup ---
 app.listen(port, () => {
-  console.log(`✅ Server listening on http://localhost:${port}`);
+  console.log(`✅ Server running on http://localhost:${port}`);
 });

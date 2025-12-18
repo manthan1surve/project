@@ -3,7 +3,7 @@
   <h2 class="section-title">Student Management</h2>
 
   <input class="input mt-2 mb-4 animate-in delay-1"
-         placeholder="Search by name / roll / PRN" />
+         placeholder="Search by name / rollno" />
     <table class="table">
       <thead>
         <tr>

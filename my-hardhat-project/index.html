@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin NFT Minter</title>
+<meta http-equiv="Content-Security-Policy"
+  content="
+    default-src 'self';
+    script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval';
+    connect-src 'self' http://localhost:3001 https://rpc.metamask.io;
+    img-src 'self' data: blob:;
+    style-src 'self' 'unsafe-inline';
+    object-src 'none';
+  ">
+
+
 </head>
 <body>
     <h1>Upload and Mint NFT</h1>
@@ -18,7 +29,7 @@
         <input type="file" id="fileInput" />
     </div>
     <br/>
-    <button id="mintButton">Upload & Mint</button>
+<button type="button" id="mintButton">Upload & Mint</button>
     <p id="status"></p>
 
     <script src="./ethers.umd.min.js"></script>
@@ -27,7 +38,7 @@
         import { CONTRACT_ABI } from './abi.js';
 
         // --- Constants & Configuration ---
-        const CONTRACT_ADDRESS = "0xDb52e700e38f5AAC343e7fAE9254605b00fB6eB5";
+        const CONTRACT_ADDRESS = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
         const HARDHAT_CHAIN_ID = '0x7a69';
         const UPLOAD_SERVER_URL = 'http://localhost:3001/upload';
         
