@@ -3,21 +3,18 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import { clerkPlugin } from '@clerk/vue'
+
+// --- CSS Imports ---
+// Keep your friend's Tailwind/Admin styles so the UI structure stays correct
 import './assets/tailwind.css'
 import './assets/admin.css'
 
-
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
-if(!PUBLISHABLE_KEY) {
-  throw new Error('VITE_CLERK_PUBLISHABLE_KEY is not defined. Please set it in your .env file.')
-}
+// Keep your custom styles (from your stash)
+import './assets/main.css'
 
 const app = createApp(App)
 
-app.use(clerkPlugin, { publishableKey: PUBLISHABLE_KEY })
-
+// Just the router, no Clerk plugin needed
 app.use(router)
 
 app.mount('#app')
