@@ -2,8 +2,8 @@
 const bcrypt = require('bcryptjs');
 // Library for JSON Web Token generation
 const jwt = require('jsonwebtoken');
-// Database connection
-const dbPool = require('../db');
+// Database connection (Supabase Client)
+const supabase = require('../db');
 // Wallet utility for creating wallets during registration
 const { createEncryptedWallet } = require('../walletService');
 
@@ -43,53 +43,59 @@ async function register(req, res) {
       });
     }
 
-    // Check if a user with this email already exists in the database
-    const existing = await dbPool.query('SELECT id FROM students WHERE email = $1 LIMIT 1', [email]);
-    if (existing.rows.length > 0) {
+    // Check if a user with this email already exists
+    const { data: existing, error: existError } = await supabase
+        .from('students')
+        .select('id')
+        .eq('email', email)
+        .single();
+    
+    // .single() returns error if 0 rows (PGRST116), so we check if data exists
+    if (existing) {
       return res.status(409).json({ error: 'Email already registered.' });
     }
 
     // Generate a new custodial wallet for the student immediately upon registration
-    // This provides the student with an Ethereum address to receive NFTs.
     const { address, encryptedJson } = await createEncryptedWallet(password);
 
-    // Hash the password before storing it in the database for security
+    // Hash the password before storing it
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Start a database transaction to ensure both student and wallet records are created successfully
-    const client = await dbPool.connect();
-    let user;
-    try {
-      await client.query('BEGIN');
+    // --- SEQUENTIAL WRITE (Mimicking Transaction) ---
+    // 1. Insert Student
+    const { data: newUser, error: studentError } = await supabase
+        .from('students')
+        .insert([{
+            email, 
+            password: hashedPassword, 
+            full_name, 
+            student_id_number, 
+            course_name, 
+            year, 
+            ethereum_address: address
+        }])
+        .select()
+        .single();
 
-      // Insert new student record
-      const insertUser = await client.query(
-        `INSERT INTO students (email, password, full_name, student_id_number, course_name, year, ethereum_address)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, email, full_name`,
-        [email, hashedPassword, full_name, student_id_number, course_name, year, address]
-      );
+    if (studentError) {
+        throw new Error(`Student Insert Failed: ${studentError.message}`);
+    }
 
-      user = insertUser.rows[0];
+    const user = newUser;
 
-      // Store the encrypted wallet keystore in the wallets table
-      await client.query(
-          `INSERT INTO wallets (user_id, public_address, encrypted_json)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (user_id)
-           DO NOTHING`,
-          [user.id, address, encryptedJson]
-      );
+    // 2. Insert Wallet
+    const { error: walletError } = await supabase
+        .from('wallets')
+        .insert([{
+            user_id: user.id,
+            public_address: address,
+            encrypted_json: encryptedJson
+        }]);
 
-      await client.query('COMMIT');
-    } catch (txErr) {
-      // Roll back changes if any step in the transaction fails
-      await client.query('ROLLBACK');
-      console.error('Register transaction error:', txErr);
-      return res.status(500).json({ error: 'Registration failed during wallet creation.' });
-    } finally {
-      // Release client back to the pool
-      client.release();
+    if (walletError) {
+        // Rollback attempt: Delete user if wallet creation fails
+        await supabase.from('students').delete().eq('id', user.id);
+        throw new Error(`Wallet Insert Failed: ${walletError.message}`);
     }
 
     // Automatically log the user in by generating a JWT token after registration
@@ -102,7 +108,7 @@ async function register(req, res) {
     });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Registration failed.' });
+    res.status(500).json({ error: error.message || 'Registration failed.' });
   }
 }
 
@@ -120,7 +126,6 @@ async function login(req, res) {
     }
 
     // --- HARDCODED ADMIN BACKDOOR ---
-    // Provides immediate access for administrative tasks using preset credentials.
     if (email === 'admin@example.com' && password === 'admin123') {
        const adminToken = signToken({ id: 99999, email: 'admin@example.com', role: 'admin' });
        return res.json({
@@ -133,20 +138,19 @@ async function login(req, res) {
          }
        });
     }
-    // --------------------------------
 
     // Look up student record from database by email
-    const result = await dbPool.query(
-      'SELECT id, email, full_name, password FROM students WHERE email = $1 LIMIT 1',
-      [email]
-    );
+    const { data: user, error } = await supabase
+        .from('students')
+        .select('id, email, full_name, password')
+        .eq('email', email)
+        .single();
 
     // Check if user was found
-    if (result.rows.length === 0) {
+    if (error || !user) {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
-    const user = result.rows[0];
     // Compare provided password with stored hash
     const isMatch = await bcrypt.compare(password, user.password);
 

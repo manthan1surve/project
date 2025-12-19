@@ -1,22 +1,18 @@
-const { Pool } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config(); // Ensure env vars are loaded if this file is imported early
 
-const dbPool = new Pool({
-  connectionString: process.env.DATABASE_URL
-  // host: process.env.DB_HOST,
-  // port: process.env.DB_PORT,
-  // user: process.env.DB_USER,
-  // password: process.env.DB_PASSWORD,
-  // database: process.env.DB_NAME,
-});
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
-dbPool.connect()
-  .then(client => {
-    console.log(`✅ Connected to PostgreSQL Database: ${process.env.DB_NAME}`);
-    client.release();
-  })
-  .catch(err => {
-    console.error('❌ Database Connection Failed:', err.message);
-  });
+// Fail fast if config is missing
+if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ Supabase Configuration Missing! Check SUPABASE_URL and SUPABASE_KEY in .env');
+    // We don't exit here to allow checking other things, but requests will fail.
+}
 
-module.exports = dbPool;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Simple health check logging
+console.log(`✅ Supabase Client Initialized: ${supabaseUrl}`);
+
+module.exports = supabase;

@@ -1,7 +1,7 @@
 // Node.js file system module for handling local files
 const fs = require('fs');
-// Database connection pool
-const dbPool = require('../db');
+// Database connection (Supabase)
+const supabase = require('../db');
 // Helper functions for Pinata (IPFS) interaction
 const { pinFileToIPFS, pinJSONToIPFS } = require('../utils/pinataHelpers');
 // Service for blockchain interaction (using Ethers.js)
@@ -36,11 +36,18 @@ async function issueNFT(req, res) {
 
         // --- 3. Retrieve Student's Wallet Address ---
         // We fetch the 'ethereum_address' that was generated for the student during registration.
-        const studentResult = await dbPool.query("SELECT ethereum_address FROM students WHERE id = $1", [recipientId]);
-        if (studentResult.rows.length === 0) {
+        const { data: student, error: studentError } = await supabase
+            .from('students')
+            .select('ethereum_address')
+            .eq('id', recipientId)
+            .single();
+
+        if (studentError || !student) {
+            console.error("Student Lookup Error:", studentError);
             return res.status(404).json({ error: "Student not found." });
         }
-        const toAddress = studentResult.rows[0].ethereum_address;
+        
+        const toAddress = student.ethereum_address;
 
         if (!toAddress) {
             return res.status(400).json({ error: "Student does not have a wallet address set." });
@@ -78,32 +85,32 @@ async function issueNFT(req, res) {
         // --- 7. Save Records to Database ---
         
         // A. Insert human-readable certificate details
-        const certQuery = `
-            INSERT INTO certificates (recipient_id, title, description, department) 
-            VALUES ($1, $2, $3, $4) 
-            RETURNING id
-        `;
-        const certResult = await dbPool.query(certQuery, [
-            recipientId, 
-            title, 
-            description || "", 
-            department || "General"
-        ]);
-        const certificateId = certResult.rows[0].id;
+        const { data: cert, error: certError } = await supabase
+            .from('certificates')
+            .insert([{
+                recipient_id: recipientId, 
+                title, 
+                description: description || "", 
+                department: department || "General"
+            }])
+            .select()
+            .single();
+
+        if (certError) throw new Error(`Certificate DB Error: ${certError.message}`);
+        
+        const certificateId = cert.id;
 
         // B. Link the minted NFT details (Transaction Hash, Token ID) to the Certificate record
-        const nftQuery = `
-            INSERT INTO nfts (certificate_id, token_id, transaction_hash, ipfs_cid)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *
-        `;
-        
-        await dbPool.query(nftQuery, [
-            certificateId,
-            parseInt(mintResult.tokenId),
-            mintResult.transactionHash,
-            tokenURI // We use the metadata URI as the IPFS reference
-        ]);
+        const { error: nftError } = await supabase
+            .from('nfts')
+            .insert([{
+                certificate_id: certificateId,
+                token_id: parseInt(mintResult.tokenId),
+                transaction_hash: mintResult.transactionHash,
+                ipfs_cid: tokenURI
+            }]);
+
+        if (nftError) throw new Error(`NFT DB Error: ${nftError.message}`);
 
         // --- 8. Final Success Response ---
         res.status(201).json({
