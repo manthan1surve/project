@@ -77,26 +77,33 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 
-const props = defineProps(['apiBase']) // Optional if we just use hardcoded base url
+// Component props (not heavily used here but available for extensibility)
+const props = defineProps(['apiBase']) 
 
-// State
-const students = ref([])
-const selectedStudentId = ref('')
-const title = ref('')
-const description = ref('')
-const department = ref('')
-const selectedFile = ref(null)
-const isIssuing = ref(false)
+// --- Reactive State ---
+const students = ref([]) // List of students for the dropdown
+const selectedStudentId = ref('') // ID of student to receive the certificate
+const title = ref('') // Certificate name
+const description = ref('') // Brief detail about the cert
+const department = ref('') // Academic department
+const selectedFile = ref(null) // The actual certificate image/file
+const isIssuing = ref(false) // Loading state for the submit button
 
-// Computed Validation
+// --- Form Validation Logic ---
+// Computed property: returns true only if essential fields are filled
 const isFormValid = computed(() => {
   return selectedStudentId.value && title.value && selectedFile.value
 })
 
+/**
+ * fetchStudents:
+ * Fetches the list of students from the backend for the "Select Student" dropdown.
+ */
 async function fetchStudents() {
   try {
     const res = await fetch('http://localhost:3001/api/students', {
       headers: {
+        // Authenticate request using either admin or user token
         'Authorization': `Bearer ${localStorage.getItem('adminToken') || localStorage.getItem('token')}`
       }
     })
@@ -108,38 +115,53 @@ async function fetchStudents() {
   }
 }
 
+/**
+ * onFileChange:
+ * Updates the selectedFile state whenever the user picks a new file from their computer.
+ */
 function onFileChange(e) {
   selectedFile.value = e.target.files[0]
 }
 
+/**
+ * issueCertificate:
+ * The primary action that triggers the issuance flow.
+ * Consolidates form data and sends a multipart request to the backend.
+ */
 async function issueCertificate() {
+  // Prevent submission if form is incomplete
   if (!isFormValid.value) return
 
+  // Enable loading UI
   isIssuing.value = true
 
-  // Create FormData explicitly matching backend expectation
+  // --- Prepare Data for Upload ---
+  // Using FormData is required for sending files (binary data) via HTTP
   const formData = new FormData()
-  formData.append('file', selectedFile.value) // req.file
-  formData.append('recipientId', selectedStudentId.value) // req.body.recipientId
-  formData.append('title', title.value) // req.body.title
-  formData.append('description', description.value) // req.body.description
-  formData.append('department', department.value) // req.body.department
+  formData.append('file', selectedFile.value) // Certificate image
+  formData.append('recipientId', selectedStudentId.value) // Linking to specific student
+  formData.append('title', title.value) 
+  formData.append('description', description.value) 
+  formData.append('department', department.value) 
 
   try {
+    // POST request to the issue endpoint
     const res = await fetch('http://localhost:3001/api/nft/issue', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('adminToken') || localStorage.getItem('token')}`
-        // Do NOT set Content-Type for FormData; fetch handles it with boundaries
+        // Note: Content-Type is intentionally omitted here as FormData sets it automatically
       },
       body: formData
     })
 
     const data = await res.json()
     
+    // Check status
     if (res.ok) {
+      // Notify admin of success and show blockchain proof
       alert(`✅ Success! NFT Minted.\nTx Hash: ${data.nft.transactionHash}`)
-      resetForm()
+      resetForm() // Clear the form for the next issuance
     } else {
       throw new Error(data.error || 'Failed to issue NFT')
     }
@@ -147,21 +169,27 @@ async function issueCertificate() {
     console.error('Issue error:', err)
     alert(`❌ Error: ${err.message}`)
   } finally {
+    // Disable loading UI
     isIssuing.value = false
   }
 }
 
+/**
+ * resetForm:
+ * Clears all input fields to their initial empty values.
+ */
 function resetForm() {
   title.value = ''
   description.value = ''
   department.value = ''
   selectedFile.value = null
   selectedStudentId.value = ''
-  // Reset file input visually if needed, though simple binding reset is often enough
 }
 
+// Automatically populate the student dropdown when the form component is loaded
 onMounted(fetchStudents)
 </script>
+
 
 <style scoped>
 .input-field {

@@ -1,20 +1,27 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { Wallet } from 'ethers';
+import { Wallet } from 'ethers'; // Ethers.js for local wallet management
 
-const API_BASE_URL = 'http://localhost:3001';
+// --- Configuration ---
+const API_BASE_URL = 'http://localhost:3001'; // Backend API URL
 
-const status = ref('loading'); // 'loading' | 'no-wallet' | 'locked' | 'unlocked'
-const isBusy = ref(false);
-const error = ref('');
+// --- State Variables ---
+const status = ref('loading'); // Current State: 'loading' | 'no-wallet' | 'locked' | 'unlocked' | 'unauthorized'
+const isBusy = ref(false); // UI blocker for async operations (loading spinners)
+const error = ref(''); // Stores error messages
 
+// Form Inputs
 const password = ref('');
 const walletAddress = ref('');
-const encryptedJson = ref('');
-const assets = ref([]);
+const encryptedJson = ref(''); // The encrypted keystore string fetched from DB
 
-const token = computed(() => localStorage.getItem('token') || '');
+// Data Display
+const assets = ref([]); // Stores the list of NFTs owned by the user
 
+// --- Auth Utilities ---
+const token = computed(() => localStorage.getItem('token') || ''); // Get JWT from local storage
+
+// Computes headers for authenticated requests
 const apiHeaders = computed(() => {
   const headers = {
     'Content-Type': 'application/json',
@@ -25,6 +32,23 @@ const apiHeaders = computed(() => {
   return headers;
 });
 
+// --- Lifecycle Actions ---
+
+/**
+ * onMounted:
+ * Automatically runs when the component loads.
+ * Attempts to fetch the user's wallet from the backend.
+ */
+onMounted(() => {
+  loadWallet();
+});
+
+// --- Wallet Management Functions ---
+
+/**
+ * 1. Load User's Wallet
+ * Checks if the user already has a wallet stored in the DB.
+ */
 async function loadWallet() {
   if (!token.value) {
     status.value = 'unauthorized';
@@ -33,6 +57,7 @@ async function loadWallet() {
 
   status.value = 'loading';
   error.value = '';
+  // Reset fields
   password.value = '';
   walletAddress.value = '';
   encryptedJson.value = '';
@@ -44,11 +69,13 @@ async function loadWallet() {
       headers: apiHeaders.value,
     });
 
+    // 401 = Not Logged In
     if (res.status === 401 || res.status === 403) {
       status.value = 'unauthorized';
       return;
     }
 
+    // 404 = No Wallet Created Yet
     if (res.status === 404) {
       status.value = 'no-wallet';
       return;
@@ -59,17 +86,23 @@ async function loadWallet() {
       throw new Error(data.error || 'Failed to load wallet.');
     }
 
+    // Success: We retrieved the Encrypted JSON
     const data = await res.json();
     encryptedJson.value = data.encrypted_json;
     walletAddress.value = data.public_address;
-    status.value = 'locked';
+    status.value = 'locked'; // Default to locked state for security
   } catch (err) {
     console.error('Error loading wallet:', err);
     error.value = err.message;
-    status.value = 'no-wallet';
+    status.value = 'no-wallet'; // Fallback
   }
 }
 
+/**
+ * 2. Create New Wallet
+ * Generates a key pair server-side (or client-side logic handled by backend service in this architecture)
+ * and saves it.
+ */
 async function createWallet() {
   if (!password.value) {
     error.value = 'Please enter a password.';
@@ -97,6 +130,7 @@ async function createWallet() {
       throw new Error(data.error || 'Failed to create wallet.');
     }
 
+    // Reload the wallet to switch state to 'locked'
     await loadWallet();
   } catch (err) {
     console.error('Error creating wallet:', err);
@@ -106,6 +140,11 @@ async function createWallet() {
   }
 }
 
+/**
+ * 3. Unlock Wallet
+ * Uses Ethers.js to decrypt the JSON with the user's password.
+ * This happens entirely in the browser (Client-Side Decryption).
+ */
 async function unlockWallet() {
   if (!password.value) {
     error.value = 'Please enter your wallet password.';
@@ -121,11 +160,13 @@ async function unlockWallet() {
   error.value = '';
 
   try {
+    // heavy computation: Decrypts the wallet
     const wallet = await Wallet.fromEncryptedJson(encryptedJson.value, password.value);
 
     walletAddress.value = wallet.address;
-    status.value = 'unlocked';
+    status.value = 'unlocked'; // State change to show assets
 
+    // Now fetch the NFTs
     await loadAssets();
   } catch (err) {
     console.error('Error unlocking wallet:', err);
@@ -135,6 +176,10 @@ async function unlockWallet() {
   }
 }
 
+/**
+ * 4. Load Assets (NFTs)
+ * Fetches the list of NFTs from the backend, then fetches their Metadata from IPFS.
+ */
 async function loadAssets() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/wallet/assets`, {
@@ -150,19 +195,23 @@ async function loadAssets() {
 
     const rawAssets = data.assets || [];
     
-    // Resolve Metadata for each asset
+    // --- Metadata Resolution Strategy ---
+    // The DB gives us the 'ipfsCid' (metadata file).
+    // We need to fetch that file to get the real 'image' URL.
     assets.value = await Promise.all(rawAssets.map(async (asset) => {
        let resolvedImage = null;
        
-       // If we have a CID (metadata pointer), fetch the JSON
+       // Check if we have a CID to resolve
        if (asset.ipfsCid) { 
           try {
-             // 1. Get the Metadata JSON
+             // A. Construct Gateway URL for Metadata
              const metadataUrl = getIpfsUrl(asset.ipfsCid);
+             
+             // B. Fetch the JSON file
              const metaRes = await fetch(metadataUrl);
              const metaJson = await metaRes.json();
              
-             // 2. Extract the Image URI from JSON
+             // C. Extract the 'image' field from JSON
              if (metaJson.image) {
                 resolvedImage = getIpfsUrl(metaJson.image);
              }
@@ -171,7 +220,7 @@ async function loadAssets() {
           }
        }
        
-       // Fallback to whatever we had or the resolved one
+       // Return asset with the 'imageUrl' property correctly populated
        return {
           ...asset,
           imageUrl: resolvedImage || getIpfsUrl(asset.imageUrl || asset.ipfsCid),
@@ -185,18 +234,19 @@ async function loadAssets() {
   }
 }
 
+// --- Helpers ---
+
 function copyAddress() {
   if (!walletAddress.value) return;
   navigator.clipboard.writeText(walletAddress.value).catch(() => {});
 }
 
+// Format address (0x1234...5678)
 const shortAddress = computed(() => {
   if (!walletAddress.value) return '';
   const addr = walletAddress.value;
   return addr.length > 10 ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : addr;
 });
-
-
 
 // --- Modal Logic ---
 const selectedAsset = ref(null);
@@ -211,11 +261,14 @@ function closeModal() {
 
 function openVerification(hash) {
   if (!hash) return;
-  // Open Sepolia Etherscan (or Polygon Amoy if that is what you use)
+  // Opens the Etherscan transaction page
   window.open(`https://sepolia.etherscan.io/tx/${hash}`, '_blank');
 }
 
-// --- Helper ---
+// --- IPFS Helper ---
+/**
+ * Converts an 'ipfs://' URI to a HTTP Gateway URL.
+ */
 function getIpfsUrl(cid) {
   if (!cid) return '';
   // If it's already a http link, return it
@@ -224,10 +277,6 @@ function getIpfsUrl(cid) {
   const clean = cid.replace('ipfs://', '');
   return `https://gateway.pinata.cloud/ipfs/${clean}`;
 }
-
-onMounted(() => {
-  loadWallet();
-});
 </script>
 
 <template>
