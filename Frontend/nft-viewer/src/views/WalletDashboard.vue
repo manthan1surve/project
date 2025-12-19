@@ -281,7 +281,7 @@ function getIpfsUrl(cid) {
 
 <template>
   <div
-    class="relative flex size-full min-h-screen flex-col w-full bg-[#111418]"
+    class="relative flex size-full min-h-screen flex-col w-full bg-transparent"
     style='font-family: "Spline Sans", "Noto Sans", sans-serif; width: 100vw;'
   >
     <div class="layout-container flex h-full grow flex-col w-full">
@@ -335,7 +335,7 @@ function getIpfsUrl(cid) {
                 v-model="password"
                 type="password"
                 placeholder="Enter a strong password"
-                class="flex w-full rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-[#3b4754] bg-[#111418] h-12 placeholder:text-gray-500 px-4 text-base font-normal"
+                class="flex w-full rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-[#3b4754] bg-transparent h-12 placeholder:text-gray-500 px-4 text-base font-normal"
               />
             </label>
 
@@ -368,7 +368,7 @@ function getIpfsUrl(cid) {
                 v-model="password"
                 type="password"
                 placeholder="Enter your password"
-                class="flex w-full rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-[#3b4754] bg-[#111418] h-12 placeholder:text-gray-500 px-4 text-base font-normal"
+                class="flex w-full rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-[#3b4754] bg-transparent h-12 placeholder:text-gray-500 px-4 text-base font-normal"
               />
             </label>
 
@@ -392,7 +392,7 @@ function getIpfsUrl(cid) {
               </div>
               <div class="flex items-center gap-2">
                 <span
-                  class="font-mono text-sm text-gray-300 bg-[#111418] border border-[#3b4754] rounded-lg px-3 py-1"
+                  class="font-mono text-sm text-gray-300 bg-transparent border border-[#3b4754] rounded-lg px-3 py-1"
                 >
                   {{ shortAddress }}
                 </span>
@@ -432,7 +432,7 @@ function getIpfsUrl(cid) {
                   v-for="asset in assets"
                   :key="asset.tokenId"
                   @click="openModal(asset)"
-                  class="bg-[#111418] border border-[#283039] rounded-xl overflow-hidden shadow-lg cursor-pointer hover:border-sky-500 transition-colors group"
+                  class="bg-transparent border border-[#283039] rounded-xl overflow-hidden shadow-lg cursor-pointer hover:border-sky-500 transition-colors group"
                 >
                   <div class="relative">
                     <img
@@ -469,11 +469,11 @@ function getIpfsUrl(cid) {
       </div>
 
     <!-- MODAL OVERLAY -->
-    <div v-if="selectedAsset" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="closeModal">
-      <div class="bg-[#1b2127] border border-[#3b4754] w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative animate-fadeIn">
+    <div v-if="selectedAsset" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80" @click.self="closeModal">
+      <div class="bg-transparent border border-[#3b4754] w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative animate-fadeIn">
         
         <!-- Close Button -->
-        <button @click="closeModal" class="absolute top-4 right-4 text-white hover:text-red-400 z-10 p-2 bg-black/40 rounded-full backdrop-blur-md">
+        <button @click="closeModal" class="absolute top-4 right-4 text-white hover:text-red-400 z-10 p-2 bg-transparent rounded-full">
            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
            </svg>
@@ -519,5 +519,3 @@ function getIpfsUrl(cid) {
     </div>
   </div>
 </template>
-
-

@@ -29,16 +29,13 @@ Follow these steps to set up the environment.
     cd Project
     ```
 
-2.  **Install Dependencies:**
-    This monorepo manages dependencies for both frontend and backend.
+
+2.  **One-Click Setup:**
+    The project includes a unified setup script to install dependencies for the Backend, Frontend, OCR, and Hardhat environments automatically.
     ```bash
-    npm install
-    # Then install sub-project dependencies
-    cd backend && npm install
-    cd ../Frontend/nft-viewer && npm install
-    cd ../../my-hardhat-project && npm install
-    cd ..
+    npm run setup
     ```
+
 
 3.  **Environment Setup:**
     Create a `.env` file in the `backend/` directory (see `RUN_GUIDE.md` for details).

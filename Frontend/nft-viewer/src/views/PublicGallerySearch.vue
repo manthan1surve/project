@@ -43,10 +43,10 @@ async function handleLogin() {
 
 <template>
   <div
-    class="relative flex min-h-screen w-full items-center justify-center bg-[#111418]"
+    class="relative flex min-h-screen w-full items-center justify-center bg-transparent"
     style='font-family: "Spline Sans", "Noto Sans", sans-serif; width: 100vw;'
   >
-    <div class="w-full max-w-md bg-[#1b2127] border border-[#3b4754] rounded-2xl shadow-2xl p-8">
+    <div class="w-full max-w-md bg-transparent border border-[#3b4754] rounded-2xl shadow-2xl p-8">
       <h1 class="text-white text-2xl font-bold mb-2 text-center">Welcome</h1>
       <p class="text-gray-400 text-sm mb-6 text-center">
         Sign in with your email and password to access your wallet dashboard.
@@ -60,7 +60,7 @@ async function handleLogin() {
             v-model="form.email"
             type="email"
             required
-            class="w-full rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-[#3b4754] bg-[#111418] h-12 placeholder:text-gray-500 px-4 text-base font-normal"
+            class="w-full rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-[#3b4754] bg-transparent h-12 placeholder:text-gray-500 px-4 text-base font-normal"
             placeholder="you@example.com"
           />
         </div>
@@ -72,7 +72,7 @@ async function handleLogin() {
             v-model="form.password"
             type="password"
             required
-            class="w-full rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-[#3b4754] bg-[#111418] h-12 placeholder:text-gray-500 px-4 text-base font-normal"
+            class="w-full rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-[#3b4754] bg-transparent h-12 placeholder:text-gray-500 px-4 text-base font-normal"
             placeholder="••••••••"
           />
         </div>

@@ -8,82 +8,29 @@ This document explains how to set up and run the different components of the pro
 
 ---
 
-## 1. 📂 Backend Server
-The main backend handles authentication, database connections, and IPFS uploads.
+## 🕹️ Command Center (IDE Workflow)
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies (if not already done):
-   ```bash
-   npm install
-   ```
-3. Run the server:
-   ```bash
-   node server.js
-   ```
-   - **Port**: `3001`
-   - **Endpoint**: `http://localhost:3001`
+This project has been optimized for **VS Code** (or any IDE with terminal tabs). You can run the entire stack using simple `npm run` commands from the **root directory**.
 
----
-
-## 2. 🎨 Frontend Application
-The Vue.js application provides the user interface for the NFT viewer and wallet dashboard.
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd Frontend/nft-viewer
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-   - **URL**: Check the terminal output (usually `http://localhost:5173`)
-
----
-
-## 3. ⛓️ Blockchain (Hardhat)
-This section contains the smart contracts and local blockchain environment.
-
-### Run Local Node
-1. Navigate to the hardhat directory:
-   ```bash
-   cd my-hardhat-project
-   ```
-2. Start the local Hardhat node:
-   ```bash
-   npx hardhat node
-   ```
-   - **RPC URL**: `http://127.0.0.1:8545`
-
-### Deploy Contracts
-1. In a new terminal (while the node is running):
-   ```bash
-   cd my-hardhat-project
-   npx hardhat run scripts/deploy-nft.js --network localhost
-   ```
-   - *Note: Ensure the deployed contract address is updated in `Frontend/nft-viewer/src/config.js`.*
-
-### Secondary/Legacy Server (Optional)
-This is a utility server for standalone IPFS testing.
-1. In the `my-hardhat-project` directory:
-   ```bash
-   node server.js
-   ```
-   - **Port**: `3002` (Updated to avoid conflict)
-
----
-
-## 🚀 Quick Start (One Command)
-You can run the frontend development server directly from the root using npm workspaces:
+### 1. Setup (First Run Only)
+Installs dependencies for all 4 project components (Root, Backend, Frontend, Hardhat).
 ```bash
-npm run dev
+npm run setup
 ```
+
+### 2. Launch the System
+Open **4 Terminal Tabs** in your IDE and run one command in each:
+
+| Terminal Tab | Command | Description | Port |
+| :--- | :--- | :--- | :--- |
+| **1. Blockchain** | `npm run chain` | Starts the local Hardhat Node. | `8545` |
+| **2. Operations** | `npm run ops-deploy` | Deploys contracts to the local node. | - |
+| **3. Backend** | `npm run backend` | Starts the API Server. | `3001` |
+| **4. Frontend** | `npm run frontend` | Starts the Vue Client. | `5173` |
+
+> **Note:** Always start the **Chain** before deploying contracts or running the backend.
+
+---
 
 ## 🛠️ Debugging
 - If you see `EADDRINUSE: address already in use :::3001`, check if another instance of the backend is running.

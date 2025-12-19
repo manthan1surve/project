@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue' // Vue composition API utilities
 import { useRouter } from 'vue-router' // Router for page navigation
-import CertificateIssuance from './admincomponents/CertificateIssuance.vue' // Custom component for certificate issuance form
+import CertificateIssuance from '../components/admincomponents/CertificateIssuance.vue' // Custom component for certificate issuance form
 
 // Initialize router instance
 const router = useRouter()
@@ -67,9 +67,9 @@ onMounted(fetchDashboardData)
 
 
 <template>
-  <div class="relative min-h-screen bg-[#0b0e14] text-white flex overflow-hidden">
+  <div class="relative min-h-screen bg-transparent text-white flex overflow-hidden">
     <!-- Sidebar -->
-    <aside class="w-64 bg-[#111418] border-r border-[#283039] hidden md:flex flex-col p-6">
+    <aside class="w-64 bg-transparent border-r border-[#283039] hidden md:flex flex-col p-6">
       <div class="flex items-center gap-3 mb-8">
         <div class="w-8 h-8 rounded-lg bg-indigo-500"></div>
         <h1 class="font-bold text-lg">Admin Panel</h1>
@@ -99,7 +99,7 @@ onMounted(fetchDashboardData)
 
     <!-- Main Content -->
     <main class="flex-1 flex flex-col relative overflow-y-auto">
-      <header class="flex items-center justify-between px-8 py-5 border-b border-[#283039] bg-[#111418]/80 backdrop-blur-md sticky top-0 z-20">
+      <header class="flex items-center justify-between px-8 py-5 border-b border-[#283039] bg-transparent sticky top-0 z-20">
         <h2 class="text-xl font-bold capitalize">{{ activeTab }}</h2>
       </header>
 
@@ -109,18 +109,18 @@ onMounted(fetchDashboardData)
         <div v-if="activeTab === 'dashboard'" class="space-y-8">
           <!-- Stats -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="p-6 bg-[#161b22] border border-[#283039] rounded-2xl">
+            <div class="p-6 bg-transparent border border-[#283039] rounded-2xl">
               <h3 class="text-gray-400 text-sm font-medium">Total Students</h3>
               <p class="text-3xl font-bold text-white mt-1">{{ totalStudents }}</p>
             </div>
-            <div class="p-6 bg-[#161b22] border border-[#283039] rounded-2xl">
+            <div class="p-6 bg-transparent border border-[#283039] rounded-2xl">
               <h3 class="text-gray-400 text-sm font-medium">Certificates Issued</h3>
               <p class="text-3xl font-bold text-indigo-400 mt-1">{{ totalIssued }}</p>
             </div>
           </div>
 
           <!-- Recent Activity Table -->
-          <div class="bg-[#161b22] border border-[#283039] rounded-2xl overflow-hidden">
+          <div class="bg-transparent border border-[#283039] rounded-2xl overflow-hidden">
              <div class="px-6 py-4 border-b border-[#283039]">
                <h3 class="font-bold text-white">Recent Issues</h3>
              </div>

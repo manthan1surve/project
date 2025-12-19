@@ -30,10 +30,12 @@ const app = express();
 const port = 3001;
 
 // CORS configuration to allow local frontend access
+// CORS CONFIGURATION
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173'], // Allow explicit origins
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 // Parse incoming JSON request bodies
 app.use(express.json());

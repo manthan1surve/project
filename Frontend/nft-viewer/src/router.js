@@ -2,24 +2,18 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 // 1. Views
 import RegistrationPage from './views/RegistrationPage.vue'
-import LoginPage from './components/LoginPage.vue'
+import LoginPage from './views/LoginPage.vue'
 import AdminLogin from './views/AdminLogin.vue'
-
-// 2. Components
-import WalletDashboard from './components/WalletDashboard.vue'
-
-import StudentDashboard from './components/StudentDashboard.vue'
-import AdminDashboard from './components/AdminDashboard.vue'
-import NFTGallery from './components/NFTGallery.vue'
-import BabylonScene from './components/BabylonScene.vue'
-
-// 3. Public Search
-// Ensure you actually renamed components/LoginPage.vue to PublicGallerySearch.vue
+import WalletDashboard from './views/WalletDashboard.vue'
+import StudentDashboard from './views/StudentDashboard.vue'
+import AdminDashboard from './views/AdminDashboard.vue'
+import NFTGallery from './views/NFTGallery.vue'
+import BabylonScene from './views/BabylonScene.vue'
 import PublicGallerySearch from './views/PublicGallerySearch.vue'
 
 const routes = [
-  { path: '/', redirect: '/register' },
-  { path: '/register', name: 'Register', component: RegistrationPage },
+  { path: '/', name: 'Home', component: RegistrationPage },
+  { path: '/register', redirect: '/' },
   { path: '/login', name: 'Login', component: LoginPage },
   { path: '/wallet', name: 'WalletDashboard', component: WalletDashboard },
   { path: '/student-dashboard', name: 'StudentDashboard', component: StudentDashboard },

@@ -1,18 +1,12 @@
 <template>
   <div class="relative min-h-screen flex items-center justify-center overflow-hidden">
     <!-- Video Background -->
-    <video
-      class="absolute inset-0 w-full h-full object-cover z-0"
-      autoplay muted loop playsinline
-    >
-      <source src="/bg-video.mp4" type="video/mp4" />
-    </video>
-    <div class="absolute inset-0 bg-black/60 z-0"></div>
+    <!-- Video Background Removed -->
 
     <!-- Login Card -->
     <div class="relative z-10 w-full max-w-md px-4">
-      <div class="glass-card p-8">
-        <h1 class="text-3xl font-bold text-white text-center mb-2">Student Login</h1>
+      <div class="glass-card p-8" data-particle-target="frame">
+        <h1 class="text-3xl font-bold text-white text-center mb-2" data-particle-target="detail">Student Login</h1>
         <p class="text-gray-400 text-center mb-8">Access your academic wallet</p>
 
         <form @submit.prevent="handleLogin" class="space-y-6">
@@ -26,6 +20,7 @@
               required
               class="input-glass"
               placeholder="student@university.edu"
+              data-particle-target="detail"
             />
           </div>
 
@@ -38,6 +33,7 @@
               required
               class="input-glass"
               placeholder="••••••••"
+              data-particle-target="detail"
             />
           </div>
 
@@ -46,6 +42,7 @@
             type="submit"
             :disabled="isLoading"
             class="btn-primary w-full"
+            data-particle-target="detail"
           >
             {{ isLoading ? 'Logging in...' : 'Sign In' }}
           </button>
@@ -118,11 +115,11 @@ async function handleLogin() {
 
 <style scoped>
 .glass-card {
-  @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl;
+  @apply bg-transparent border border-white/10 rounded-3xl shadow-2xl relative z-10;
 }
 
 .input-glass {
-  @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all;
+  @apply w-full bg-transparent border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all;
 }
 
 .btn-primary {

@@ -193,6 +193,6 @@ onMounted(fetchStudents)
 
 <style scoped>
 .input-field {
-  @apply w-full rounded-lg bg-[#111418] border border-gray-600 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all;
+  @apply w-full rounded-lg bg-transparent border border-gray-600 text-white px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <section class="glass p-6 rounded-xl fade-slide-up">
+  <section class="bg-transparent p-6 rounded-xl fade-slide-up">
     <h2 class="section-title mb-4">Issued Certificates</h2>
 
     <table class="table">

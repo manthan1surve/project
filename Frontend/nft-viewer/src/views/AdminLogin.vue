@@ -4,24 +4,27 @@
     class="relative min-h-screen w-full flex items-center justify-center overflow-x-hidden"
   >
     <!-- VIDEO BACKGROUND -->
-    <video
-      class="absolute inset-0 w-full h-full object-cover"
-      autoplay
-      muted
-      loop
-      playsinline
-    >
-      <source src="/bg-video.mp4" type="video/mp4" />
-    </video>
+    <!-- VIDEO BACKGROUND REMOVED -->
 
     <!-- DARK OVERLAY -->
-    <div class="absolute inset-0 bg-black/60"></div>
+    <!-- DARK OVERLAY REMOVED (Handled globally) -->
 
     <!-- CONTENT -->
     <div class="relative z-10 w-full max-w-sm px-4">
-      <div class="card mx-auto w-full overflow-hidden">
+      
+      <!-- NAVIGATION -->
+      <div class="absolute -top-16 left-0">
+        <router-link to="/" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Home
+        </router-link>
+      </div>
+
+      <div class="card mx-auto w-full overflow-hidden" data-particle-target="frame">
         <!-- HEADER -->
-        <div class="px-6 pt-5 pb-4 border-b border-white/10 bg-white/5 text-center">
+        <div class="px-6 pt-5 pb-4 border-b border-white/10 bg-transparent text-center">
           <h1 class="text-xl font-semibold text-slate-50">
             Admin Login
           </h1>
@@ -128,10 +131,9 @@ async function handleAdminLogin() {
 /* GLASS CARD */
 .card {
   border-radius: 24px;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(24px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.85);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.3);
 }
 
 /* FORM */
@@ -155,8 +157,8 @@ async function handleAdminLogin() {
   color: #f8fafc;
   caret-color: #a5b4fc;
 
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(129, 140, 248, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   outline: none;
 }
 

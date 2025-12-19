@@ -22,7 +22,7 @@
 import { ref, onMounted } from 'vue';
 import { ethers } from 'ethers';
 import { useRoute } from 'vue-router';
-import BabylonScene from './BabylonScene.vue'; // Update path if needed
+import BabylonScene from './BabylonScene.vue'; // Updated path is relative in same folder
 import { contractAddress, contractABI, rpcUrl } from '../config';
 
 // --- Constants ---

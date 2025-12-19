@@ -1,16 +1,7 @@
 <template>
   <div class="relative min-h-screen flex items-center justify-center px-6 overflow-hidden">
-    <video
-      class="absolute inset-0 w-full h-full object-cover z-0"
-      autoplay
-      muted
-      loop
-      playsinline
-    >
-      <source src="/bg-video.mp4" type="video/mp4" />
-    </video>
 
-    <div class="absolute inset-0 bg-black/50 z-0"></div>
+    <!-- Overlay Removed -->
 
     <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/30 blur-3xl rounded-full"></div>
     <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-fuchsia-500/20 blur-3xl rounded-full"></div>
@@ -21,13 +12,22 @@
       </button>
     </div>
 
+    <div class="absolute top-10 left-6 z-20">
+      <router-link to="/login" class="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium bg-transparent px-4 py-2 rounded-lg border border-white/10">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Login
+      </router-link>
+    </div>
+
     <div class="relative z-10 w-full max-w-4xl">
-      <div class="glass-card overflow-hidden">
+      <div class="glass-card overflow-hidden" data-particle-target="frame">
         <div class="md:flex">
 
           <div class="w-full p-8">
             <div class="flex items-center justify-between mb-6">
-              <h1 class="text-xl md:text-2xl font-semibold text-white">
+              <h1 class="text-xl md:text-2xl font-semibold text-white" data-particle-target="detail">
                 Create Student Account
               </h1>
             </div>
@@ -43,6 +43,7 @@
                     type="text"
                     class="input-glass"
                     placeholder="John Doe"
+                    data-particle-target="detail"
                   />
                   <span class="text-[10px] text-white/40 block mt-1 italic ml-1">Example: FirstName MiddleName Surname</span>
                 </div>
@@ -55,6 +56,7 @@
                     type="email"
                     class="input-glass"
                     placeholder="john@example.com"
+                    data-particle-target="detail"
                   />
                 </div>
 
@@ -67,6 +69,7 @@
                     minlength="6"
                     class="input-glass"
                     placeholder="••••••••"
+                    data-particle-target="detail"
                   />
                 </div>
 
@@ -78,6 +81,7 @@
                     type="text"
                     class="input-glass"
                     placeholder="e.g. 25tbscit006"
+                    data-particle-target="detail"
                   />
                   <span class="text-[10px] text-white/40 block mt-1 italic ml-1 leading-tight">Format: [Year][FY/SY/TY][Dept][RollNo]</span>
                 </div>
@@ -90,13 +94,14 @@
                     type="text"
                     class="input-glass"
                     placeholder="BSc IT"
+                    data-particle-target="detail"
                   />
                   <span class="text-[10px] text-white/40 block mt-1 italic ml-1">Default prefilled as BSCIT</span>
                 </div>
 
                 <div class="md:col-span-2">
                   <label class="label">Year</label>
-                  <select v-model="formData.year" class="input-glass" required>
+                  <select v-model="formData.year" class="input-glass" required data-particle-target="detail">
                     <option value="" disabled class="text-black">Select Year</option>
                     <option value="FY" class="text-black">First Year (FY)</option>
                     <option value="SY" class="text-black">Second Year (SY)</option>
@@ -112,6 +117,7 @@
                     type="submit"
                     :disabled="isLoading"
                     class="btn-primary w-full flex justify-center"
+                    data-particle-target="detail"
                   >
                     {{ isLoading ? 'Registering...' : 'Register Student' }}
                   </button>
@@ -219,7 +225,7 @@ async function handleRegister() {
 <style scoped>
 /* Glass Card (From Friend's Design) */
 .glass-card {
-  @apply bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl;
+  @apply bg-transparent border border-white/20 rounded-3xl shadow-2xl relative z-10;
 }
 
 /* Labels */
@@ -230,7 +236,7 @@ async function handleRegister() {
 /* Glass Inputs */
 .input-glass {
   @apply w-full rounded-lg
-         bg-white/10 backdrop-blur-md
+         bg-transparent
          text-white
          px-4 py-2
          border border-white/20
@@ -244,7 +250,7 @@ async function handleRegister() {
 /* Admin Button */
 .admin-btn {
   @apply px-4 py-2 rounded-lg
-         bg-black/40 backdrop-blur-md
+         bg-transparent
          border border-white/20
          text-white text-sm font-medium
          shadow-lg
