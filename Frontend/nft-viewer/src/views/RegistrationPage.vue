@@ -190,7 +190,7 @@ async function handleRegister() {
       successMessage.value = `Welcome, ${data.user.full_name}! Redirecting...`;
 
       setTimeout(() => {
-        router.push('/wallet'); // Redirect to Wallet Dashboard
+        router.push('/student-dashboard'); // Redirect to Student Dashboard (Production Flow)
       }, 1000);
 
       // Clear form

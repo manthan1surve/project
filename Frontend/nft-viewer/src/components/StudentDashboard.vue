@@ -1,253 +1,142 @@
 <template>
-  <!-- ROOT -->
-  <div class="relative min-h-screen overflow-hidden">
-    <!-- ================= BACKGROUND VIDEO ================= -->
-<!-- Background Video -->
-<video
-  class="fixed inset-0 w-full h-full object-cover -z-10"
-  autoplay
-  muted
-  loop
-  playsinline
->
-  <source src="/bg-video.mp4" type="video/mp4" />
-</video>
-
-<!-- Dark Overlay -->
-<div class="fixed inset-0 bg-black/70 -z-10"></div>
-
-
-    <!-- Dark overlay -->
-    <div class="absolute inset-0 bg-black/50 z-10"></div>
-
-    <!-- ================= DASHBOARD CONTENT ================= -->
-    <div class="relative z-20 p-6">
-      <!-- ================= HEADER / IDENTITY ================= -->
-      <div class="glass identity-card">
-        <div class="identity-left">
-          <h1 class="student-name">{{ student.fullName }}</h1>
-          <p class="student-meta">
-            Roll No: {{ student.rollno }} · {{ student.course }}
-          </p>
-          <p class="student-meta">
-            Department: {{ student.department }}
-          </p>
-        </div>
-
-        <div class="identity-right">
-          <span class="status verified">Verified</span>
-          <p class="wallet">
-            {{ shortAddress(student.walletAddress) }}
-          </p>
-        </div>
+  <div class="relative min-h-screen bg-[#0b0e14] text-white flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#111418] border-r border-[#283039] hidden md:flex flex-col p-6">
+      <div class="flex items-center gap-3 mb-8">
+        <div class="w-8 h-8 rounded-full bg-indigo-500"></div>
+        <h1 class="font-bold text-lg">Student Portal</h1>
       </div>
+      
+      <nav class="flex-1 space-y-2">
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#283039] text-white font-medium">
+          <span>🏠</span> Dashboard
+        </a>
+        <a href="/wallet" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-[#1b2127] transition">
+          <span>🎓</span> My Certificates
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-[#1b2127] transition">
+          <span>⚙️</span> Settings
+        </a>
+      </nav>
 
-      <!-- ================= DASHBOARD SUMMARY ================= -->
-      <div class="summary-grid">
-        <div class="glass summary-card">
-          <p class="summary-label">Total Certificates Owned</p>
-          <p class="summary-value">{{ summary.totalCertificates }}</p>
-        </div>
+      <button @click="logout" class="flex items-center gap-3 px-4 py-3 mt-auto text-red-400 hover:text-red-300 transition">
+        <span>🚪</span> Logout
+      </button>
+    </aside>
 
-        <div class="glass summary-card">
-          <p class="summary-label">Latest Certificate Issued</p>
-          <p class="summary-value">
-            {{ summary.latestCertificate.title }}
-          </p>
-          <p class="summary-sub">
-            {{ summary.latestCertificate.date }}
-          </p>
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative overflow-y-auto">
+      <!-- Top Bar -->
+      <header class="flex items-center justify-between px-8 py-5 border-b border-[#283039] bg-[#111418]/80 backdrop-blur-md sticky top-0 z-20">
+        <h2 class="text-xl font-bold">Welcome back, {{ student.full_name || 'Student' }}</h2>
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500"></div>
         </div>
+      </header>
 
-        <div class="glass summary-card">
-          <p class="summary-label">Blockchain Network</p>
-          <p class="summary-value">Private Ethereum</p>
-        </div>
+      <div class="p-8 max-w-7xl mx-auto w-full space-y-8">
+        
+        <!-- Profile Card -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 p-6 bg-[#161b22] border border-[#283039] rounded-2xl flex items-center gap-6 shadow-xl">
+            <div class="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center text-3xl">
+              🎓
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-white">{{ student.full_name || 'Loading...' }}</h3>
+              <p class="text-gray-400 mt-1">{{ student.email }}</p>
+              <div class="flex gap-3 mt-4">
+                <span class="px-3 py-1 rounded-full bg-[#283039] text-xs font-mono text-indigo-300 border border-indigo-500/30">
+                  ID: {{ student.student_id_number || '---' }}
+                </span>
+                <span class="px-3 py-1 rounded-full bg-[#283039] text-xs font-mono text-emerald-300 border border-emerald-500/30">
+                  Active Student
+                </span>
+              </div>
+            </div>
+          </div>
 
-        <div class="glass summary-card">
-          <p class="summary-label">Verification Status</p>
-          <p class="summary-value verified-text">All Verified ✔</p>
-        </div>
+          <div class="p-6 bg-[#161b22] border border-[#283039] rounded-2xl flex flex-col justify-center shadow-xl">
+             <h4 class="text-gray-400 text-sm font-medium uppercase tracking-wider mb-4">Academic Details</h4>
+             <div class="space-y-3">
+               <div class="flex justify-between border-b border-[#283039] pb-2">
+                 <span class="text-gray-400">Course</span>
+                 <span class="font-medium text-white">{{ student.course_name || '---' }}</span>
+               </div>
+               <div class="flex justify-between border-b border-[#283039] pb-2">
+                 <span class="text-gray-400">Year</span>
+                 <span class="font-medium text-white">{{ student.year || '---' }}</span>
+               </div>
+               <div class="flex justify-between">
+                 <span class="text-gray-400">Semester</span>
+                 <span class="font-medium text-white">Current</span>
+               </div>
+             </div>
+          </div>
+        </section>
+
+        <!-- Actions -->
+        <section>
+          <h3 class="text-xl font-bold mb-4">Quick Actions</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button @click="$router.push('/wallet')" class="group p-6 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-2xl hover:border-indigo-400 transition-all text-left">
+              <div class="w-12 h-12 rounded-lg bg-indigo-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                📜
+              </div>
+              <h4 class="text-lg font-bold text-white">View Certificates</h4>
+              <p class="text-sm text-gray-400 mt-2">Access your blockchain-verified credentials.</p>
+            </button>
+            
+            <div class="p-6 bg-[#161b22] border border-[#283039] rounded-2xl opacity-50 cursor-not-allowed">
+              <div class="w-12 h-12 rounded-lg bg-gray-700 flex items-center justify-center mb-4">
+                📚
+              </div>
+              <h4 class="text-lg font-bold text-white">Course Materials</h4>
+              <p class="text-sm text-gray-400 mt-2">Download syllabus and notes (Coming Soon).</p>
+            </div>
+          </div>
+        </section>
+
       </div>
-
-      <!-- ================= QUICK ACTIONS ================= -->
-      <div class="glass actions-card">
-        <h2 class="section-title">Quick Actions</h2>
-
-        <div class="actions-grid">
-          <button class="glass-btn primary" @click="goToCertificates">
-            View Certificates
-          </button>
-
-          <button class="glass-btn secondary">
-            Share Verification Link
-          </button>
-        </div>
-      </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const student = ref({})
 
-const student = ref({
-  fullName: 'Manthan Surve',
-  rollno: '25TBSCIT062',
-  course: 'BSc.I.T.',
-  department: 'Information Technology',
-  walletAddress: '0xA13fE89c3B7D2E90bA32f8A1F94aC8123E9D45bA'
-})
-
-const summary = ref({
-  totalCertificates: 4,
-  latestCertificate: {
-    title: 'Semester VI Completion Certificate',
-    date: '15 May 2025'
+async function fetchProfile() {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    router.push('/login')
+    return
   }
-})
 
-function shortAddress(address) {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`
+  try {
+    const res = await fetch('http://localhost:3001/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    
+    if (res.ok) {
+      student.value = await res.json()
+    } else {
+      localStorage.removeItem('token')
+      router.push('/login')
+    }
+  } catch (err) {
+    console.error('Profile fetch error:', err)
+  }
 }
 
-function goToCertificates() {
-  router.push('/certificates')
+function logout() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  router.push('/login')
 }
+
+onMounted(fetchProfile)
 </script>
-
-<style scoped>
-/* ================= GLASS BASE ================= */
-.glass {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-/* ================= IDENTITY ================= */
-.identity-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.75rem;
-  border-radius: 20px;
-  margin-bottom: 2rem;
-}
-
-.student-name {
-  color: white;
-  font-size: 1.75rem;
-  font-weight: 700;
-}
-
-.student-meta {
-  color: #cbd5e1;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-}
-
-.identity-right {
-  text-align: right;
-}
-
-.status {
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-}
-
-.verified {
-  background: rgba(16, 185, 129, 0.25);
-  color: #6ee7b7;
-}
-
-.wallet {
-  margin-top: 0.6rem;
-  font-size: 0.85rem;
-  color: #94a3b8;
-}
-
-/* ================= SUMMARY ================= */
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 2.5rem;
-}
-
-.summary-card {
-  padding: 1.5rem;
-  border-radius: 18px;
-}
-
-.summary-label {
-  font-size: 0.8rem;
-  color: #94a3b8;
-}
-
-.summary-value {
-  font-size: 1.6rem;
-  color: white;
-  font-weight: 700;
-}
-
-.summary-sub {
-  font-size: 0.75rem;
-  color: #cbd5e1;
-}
-
-.verified-text {
-  color: #6ee7b7;
-}
-
-/* ================= ACTIONS ================= */
-.actions-card {
-  padding: 1.75rem;
-  border-radius: 20px;
-}
-
-.section-title {
-  color: white;
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-}
-
-.actions-grid {
-  display: flex;
-  gap: 1rem;
-}
-
-/* ================= GLASS BUTTONS ================= */
-.glass-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(10px);
-  transition: all 0.25s ease;
-}
-
-.glass-btn.primary {
-  background: rgba(99, 102, 241, 0.45);
-}
-
-.glass-btn.primary:hover {
-  background: rgba(99, 102, 241, 0.65);
-}
-
-.glass-btn.secondary {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.glass-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.18);
-}
-</style>

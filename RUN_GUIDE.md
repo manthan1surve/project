@@ -124,16 +124,58 @@ The frontend application runs on `http://localhost:5173`.
 2. Enter the wallet password you set earlier and click **Unlock**.
 3. *Verification*: The frontend decrypts the wallet locally using `ethers.js`. If valid, it will fetch and display "My Certificates".
 
-### 4. Admin Management
+### 4. Admin Management & Certificate Issuance
 1. Go to `/admin-login`.
-2. Use the default credentials:
+2. Use the credentials:
    - **Email**: `admin@example.com`
    - **Password**: `admin123`
-3. Click **Admin Dashboard** to view the management interface.
+3. Navigate to **Issue Certificate** section inside the Admin Dashboard.
+4. **The Flow**:
+   - Select a student from the dropdown (these are real students fetched from your DB).
+   - Enter a **Title** for the certificate (e.g., "B.Sc Graduation").
+   - Choose a **File** (image/PDF) to be the certificate.
+   - Click **Mint & Transfer NFT**.
+5. **Backend Action**:
+   - The server uploads the file to **Pinata (IPFS)**.
+   - It creates a metadata JSON and pins it as well.
+   - It **automatically signs** the transaction using the `ADMIN_PRIVATE_KEY` (No MetaMask popup needed!).
+   - The NFT is minted directly to the student's Ethereum address stored in the DB.
 
-### 5. Public NFT Verification
+### 5. Automated Asset Tracking
+1. After the Admin Successful Minting message appears, log in as the **Student**.
+2. Go to the **Wallet Dashboard** and **Unlock** the wallet.
+3. Your new certificate will automatically appear under "My Certificates".
+4. *Verification*: The asset is loaded from the backend `nfts` table (for speed) and verified against the blockchain.
+
+### 6. Public NFT Verification
 1. Go to `/login` (Public Search).
-2. Paste a valid wallet address (you can copy yours from the Wallet Dashboard).
+2. Paste the student's wallet address.
 3. Click **View Gallery**.
-4. *Verification*: The app displays all NFTs minted to that specific address on the blockchain.
+4. *Verification*: The app displays all NFTs minted to that address directly from the blockchain node.
+
+## 🗄️ Database Schema (Reference)
+The system uses a normalized PostgreSQL schema. If debugging query issues, refer to this structure:
+
+### 1. `students` (User Accounts)
+- `id`: Primary Key
+- `full_name`: Student Name
+- `email`: Login Email
+- `ethereum_address`: The custodial wallet address
+
+### 2. `wallets` (Keystore Storage)
+- `user_id`: Link to `students.id`
+- `encrypted_json`: The scrypt-encrypted private key string
+- `public_address`: Redundant lookup field
+
+### 3. `certificates` (The "Linker" Table)
+- `id`: Primary Key
+- `recipient_id`: Link to `students.id` (This connects an asset to a user)
+
+### 4. `nfts` (Blockchain Registry)
+- `token_id`: On-chain ID (BigInt)
+- `ipfs_cid`: The hash of the metadata/image (Source of Truth for "Token URI")
+- `transaction_hash`: Blockchain proof
+- `certificate_id`: Link to `certificates.id` (NOT student_id directly)
+
+
 

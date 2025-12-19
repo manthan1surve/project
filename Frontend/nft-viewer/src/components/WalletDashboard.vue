@@ -148,7 +148,37 @@ async function loadAssets() {
       throw new Error(data.error || 'Failed to load assets.');
     }
 
-    assets.value = data.assets || [];
+    const rawAssets = data.assets || [];
+    
+    // Resolve Metadata for each asset
+    assets.value = await Promise.all(rawAssets.map(async (asset) => {
+       let resolvedImage = null;
+       
+       // If we have a CID (metadata pointer), fetch the JSON
+       if (asset.ipfsCid) { 
+          try {
+             // 1. Get the Metadata JSON
+             const metadataUrl = getIpfsUrl(asset.ipfsCid);
+             const metaRes = await fetch(metadataUrl);
+             const metaJson = await metaRes.json();
+             
+             // 2. Extract the Image URI from JSON
+             if (metaJson.image) {
+                resolvedImage = getIpfsUrl(metaJson.image);
+             }
+          } catch (e) {
+             console.error("Failed to resolve metadata for token " + asset.tokenId, e);
+          }
+       }
+       
+       // Fallback to whatever we had or the resolved one
+       return {
+          ...asset,
+          imageUrl: resolvedImage || getIpfsUrl(asset.imageUrl || asset.ipfsCid),
+          isMetadataResolved: !!resolvedImage 
+       };
+    }));
+
   } catch (err) {
     console.error('Error loading assets:', err);
     error.value = err.message;
@@ -165,6 +195,35 @@ const shortAddress = computed(() => {
   const addr = walletAddress.value;
   return addr.length > 10 ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : addr;
 });
+
+
+
+// --- Modal Logic ---
+const selectedAsset = ref(null);
+
+function openModal(asset) {
+  selectedAsset.value = asset;
+}
+
+function closeModal() {
+  selectedAsset.value = null;
+}
+
+function openVerification(hash) {
+  if (!hash) return;
+  // Open Sepolia Etherscan (or Polygon Amoy if that is what you use)
+  window.open(`https://sepolia.etherscan.io/tx/${hash}`, '_blank');
+}
+
+// --- Helper ---
+function getIpfsUrl(cid) {
+  if (!cid) return '';
+  // If it's already a http link, return it
+  if (cid.startsWith('http')) return cid;
+  // If it is ipfs:// protocol, strip it
+  const clean = cid.replace('ipfs://', '');
+  return `https://gateway.pinata.cloud/ipfs/${clean}`;
+}
 
 onMounted(() => {
   loadWallet();
@@ -319,25 +378,35 @@ onMounted(() => {
                 will appear here.
               </div>
 
-              <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div
                   v-for="asset in assets"
-                  :key="asset.id"
-                  class="bg-[#111418] border border-[#283039] rounded-xl overflow-hidden shadow-lg"
+                  :key="asset.tokenId"
+                  @click="openModal(asset)"
+                  class="bg-[#111418] border border-[#283039] rounded-xl overflow-hidden shadow-lg cursor-pointer hover:border-sky-500 transition-colors group"
                 >
-                  <img
-                    v-if="asset.imageUrl"
-                    :src="asset.imageUrl"
-                    :alt="asset.title"
-                    class="w-full h-40 object-cover"
-                  />
+                  <div class="relative">
+                    <img
+                      v-if="asset.imageUrl"
+                      :src="asset.imageUrl"
+                      :alt="asset.title"
+                      class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+                  </div>
+                  
                   <div class="p-4">
-                    <h4 class="text-white font-semibold mb-1">
+                    <h4 class="text-white font-bold mb-1 truncate text-lg">
                       {{ asset.title }}
                     </h4>
                     <p class="text-gray-400 text-xs mb-2">
-                      Issuer: {{ asset.issuer }}
+                      Issued: {{ asset.issueDate ? new Date(asset.issueDate).toLocaleDateString() : 'N/A' }}
                     </p>
+                    <div class="flex items-center gap-2 mt-3">
+                         <span class="text-[10px] bg-sky-900/40 text-sky-300 border border-sky-700/50 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
+                            Verified
+                         </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -349,6 +418,55 @@ onMounted(() => {
           </div>
         </div>
       </div>
+
+    <!-- MODAL OVERLAY -->
+    <div v-if="selectedAsset" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="closeModal">
+      <div class="bg-[#1b2127] border border-[#3b4754] w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative animate-fadeIn">
+        
+        <!-- Close Button -->
+        <button @click="closeModal" class="absolute top-4 right-4 text-white hover:text-red-400 z-10 p-2 bg-black/40 rounded-full backdrop-blur-md">
+           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+           </svg>
+        </button>
+
+        <!-- Certificate Image -->
+        <div class="w-full h-64 bg-black flex items-center justify-center relative">
+           <img 
+              :src="selectedAsset.imageUrl" 
+              class="w-full h-full object-contain"
+           />
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+           <div class="mb-4">
+              <p class="text-sky-400 text-xs font-bold uppercase tracking-wider mb-1">{{ selectedAsset.department || 'University Certificate' }}</p>
+              <h2 class="text-white text-2xl font-bold leading-tight">{{ selectedAsset.title }}</h2>
+              <p class="text-gray-400 text-sm mt-1">Issued to You on {{ selectedAsset.issueDate ? new Date(selectedAsset.issueDate).toLocaleDateString() : 'Unknown Date' }}</p>
+           </div>
+           
+           <div class="bg-[#111418] rounded-xl p-4 mb-6 border border-[#283039]">
+              <h4 class="text-gray-300 text-sm font-semibold mb-2">Description</h4>
+              <p class="text-gray-400 text-sm leading-relaxed">
+                 {{ selectedAsset.description || 'No description provided for this certificate.' }}
+              </p>
+           </div>
+
+           <button 
+             @click="openVerification(selectedAsset.transactionHash)"
+             class="w-full bg-white text-slate-900 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+           >
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+             </svg>
+             Verify on Blockchain
+           </button>
+        </div>
+
+      </div>
+    </div>
+
     </div>
   </div>
 </template>

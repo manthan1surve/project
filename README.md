@@ -1,86 +1,58 @@
+# University NFT Management System 🎓
 
-# My NFT Viewer Project
+A comprehensive full-stack dApp that allows universities to issue tamper-proof academic certificates as NFTs. It features a custodial wallet system for students to securely receive and manage their credentials without needing prior blockchain knowledge.
 
-This repository is a monorepo that contains a full-stack dApp. It features a frontend for viewing NFTs and a backend to manage the smart contract logic and asset deployment.
+## ✨ Key Features
 
-## Key Features
-
--   **Frontend (Vue.js):** A modern, responsive user interface built with Vue 3 and Vite.
-    -   **NFT Gallery:** A component to display a collection of NFTs.
-    -   **Login Page:** A dedicated page for user authentication.
-    -   **3D Viewer:** A `BabylonScene.vue` component for immersive 3D visualization of NFTs.
-    -   **Styling:** Uses Tailwind CSS for efficient and customizable design.
-
--   **Hardhat Project (Backend):** The backend for smart contract development and a Node.js server.
-    -   **Smart Contracts:** `AdminNFT.sol` and `Lock.sol` for managing NFT logic.
-    -   **Secure Contracts:** Uses the OpenZeppelin library for secure and battle-tested smart contract functionality.
-    -   **Node.js Server:** An Express.js backend with `cors`, `multer`, and `axios` to handle file uploads and API interactions.
-    -   **Deployment Script:** A script to deploy the `AdminNFT` contract to the blockchain.
-
----
-This repository is a monorepo that contains a full-stack dApp. It features a frontend for viewing NFTs and a backend to manage the smart contract logic and asset deployment.
-
-## Key Features
-
--   **Frontend (Vue.js):** A modern, responsive user interface built with Vue 3 and Vite.
-    -   **NFT Gallery:** A component to display a collection of NFTs.
-    -   **Login Page:** A dedicated page for user authentication.
-    -   **3D Viewer:** A `BabylonScene.vue` component for immersive 3D visualization of NFTs.
-    -   **Styling:** Uses Tailwind CSS for efficient and customizable design.
-
--   **Hardhat Project (Backend):** The backend for smart contract development and a Node.js server.
-    -   **Smart Contracts:** `AdminNFT.sol` and `Lock.sol` for managing NFT logic.
-    -   **Secure Contracts:** Uses the OpenZeppelin library for secure and battle-tested smart contract functionality.
-    -   **Node.js Server:** An Express.js backend with `cors`, `multer`, and `axios` to handle file uploads and API interactions.
-    -   **Deployment Script:** A script to deploy the `AdminNFT` contract to the blockchain.
+-   **Frontend (Vue.js + Vite):** A modern, responsive dashboard for Students and Admins.
+-   **Backend (Node.js + Express):** Handles authentication, IPFS pinning/uploads, and secure wallet management.
+-   **Blockchain (Hardhat + Solidity):** An ERC-721 Smart Contract for minting and verifying certificates.
+-   **Custodial Wallets:** Automatically generates encrypted Ethereum wallets for students upon registration.
+-   **Admin Dashboard:** Interfaces for issuing certificates directly to students' wallets.
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
-To get the project up and running, follow these steps. This project uses `npm workspaces`, so all commands should be run from the root directory.
-
-### Prerequisites
-
-You need to have **Node.js** and **npm** installed on your system.
-
-### Installation
-To get the project up and running, follow these steps. This project uses `npm workspaces`, so all commands should be run from the root directory.
+Follow these steps to set up the environment.
 
 ### Prerequisites
 
-You need to have **Node.js** and **npm** installed on your system.
+-   **Node.js**: v18 or higher.
+-   **PostgreSQL**: A running instance with database `university_db`.
 
 ### Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/harshwar/Project.git](https://github.com/harshwar/Project.git)
-    ```
-2.  **Navigate to the project directory:**
-    ```bash
+    git clone https://github.com/harshwar/Project.git
     cd Project
     ```
-3.  **Install all dependencies:**
-    This single command will install all dependencies for both the frontend and the Hardhat backend.
-2.  **Navigate to the project directory:**
-    ```bash
-    cd Project
-    ```
-3.  **Install all dependencies:**
-    This single command will install all dependencies for both the frontend and the Hardhat backend.
+
+2.  **Install Dependencies:**
+    This monorepo manages dependencies for both frontend and backend.
     ```bash
     npm install
+    # Then install sub-project dependencies
+    cd backend && npm install
+    cd ../Frontend/nft-viewer && npm install
+    cd ../../my-hardhat-project && npm install
+    cd ..
     ```
+
+3.  **Environment Setup:**
+    Create a `.env` file in the `backend/` directory (see `RUN_GUIDE.md` for details).
 
 ---
 
-## Running the Project
+## 🏃‍♂️ Running the System
 
-### Start the Frontend
+Please refer to **[RUN_GUIDE.md](./RUN_GUIDE.md)** for detailed step-by-step instructions on starting the components:
 
-To launch the development server for the NFT viewer, run the `dev` script.
+1.  **Backend API**
+2.  **Frontend Application**
+3.  **Local Blockchain Node**
 
-```bash
-npm run dev
-```
+For a deep dive into the code structure, check **[explanation.md](./explanation.md)**.
+
+

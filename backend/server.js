@@ -11,17 +11,10 @@ const dbPool = require("./db");
 const { createEncryptedWallet } = require("./walletService");
 const { register, login } = require("./controllers/authController");
 const { authenticateToken } = require("./middleware/authMiddleware");
+const nftRoutes = require("./routes/nftRoutes");
 
 const app = express();
 const port = 3001;
-
-// Setup Multer for uploads (From Upstream)
-const upload = multer({ dest: 'uploads/' });
-
-// --- Pinata Configuration (From Upstream) ---
-const PINATA_API_KEY = process.env.PINATA_API_KEY;
-const PINATA_SECRET_API_KEY = process.env.PINATA_API_SECRET;
-const PINATA_BASE_URL = "https://api.pinata.cloud/pinning";
 
 app.use(cors({
   origin: 'http://localhost:5173',
@@ -30,70 +23,76 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// --- Pinata Helpers (From Upstream) ---
-async function pinFileToIPFS(filePath) {
-  const formData = new FormData();
-  formData.append("file", fs.createReadStream(filePath));
-  
-  const response = await axios.post(`${PINATA_BASE_URL}/pinFileToIPFS`, formData, {
-    headers: {
-      ...formData.getHeaders(),
-      pinata_api_key: PINATA_API_KEY,
-      pinata_secret_api_key: PINATA_SECRET_API_KEY,
-    },
-  });
-  return response.data.IpfsHash;
-}
-
-async function pinJSONToIPFS(jsonMetadata) {
-  const response = await axios.post(`${PINATA_BASE_URL}/pinJSONToIPFS`, jsonMetadata, {
-    headers: {
-      pinata_api_key: PINATA_API_KEY,
-      pinata_secret_api_key: PINATA_SECRET_API_KEY,
-    },
-  });
-  return response.data.IpfsHash;
-}
-
 // --- API ROUTES ---
 
-// 1. NFT Upload Route (KEPT FROM FRIEND'S CODE / UPSTREAM)
-app.post('/upload', upload.single('file'), async (req, res) => {
-  try {
-    const file = req.file;
-    if (!file) return res.status(400).json({ success: false, message: "No file uploaded." });
+// 1. NFT Routes (NEW MODULE)
+app.use("/api/nft", nftRoutes);
 
-    // Upload Image to IPFS
-    const imageHash = await pinFileToIPFS(file.path);
-    fs.unlinkSync(file.path); // Delete local temp file
-
-    // Create Metadata
-    const metadata = {
-      name: "Student Certificate NFT",
-      description: "Verification of Course Completion",
-      image: `ipfs://${imageHash}`,
-      attributes: [{ trait_type: "Type", value: "Academic" }]
-    };
-
-    // Upload Metadata to IPFS
-    const metadataHash = await pinJSONToIPFS(metadata);
-    
-    res.json({ 
-      success: true, 
-      tokenURI: `ipfs://${metadataHash}` 
-    });
-  } catch (error) {
-    console.error("IPFS Upload Error:", error.response ? error.response.data : error.message);
-    res.status(500).json({ success: false, message: "Failed to upload to Pinata." });
-  }
-});
-
-// 2. Auth Routes (KEPT YOUR MODULAR CODE / STASH)
+// 2. Auth Routes
 app.post("/api/auth/register", register);
 app.post("/api/auth/login", login);
 
-// 3. Wallet Helper
+app.get("/api/auth/me", authenticateToken, async (req, res) => {
+  try {
+      const student = await getStudentById(req.user.id);
+      if (!student) return res.status(404).json({ error: "User not found." });
+      
+      const fullProfile = await dbPool.query(
+          "SELECT id, full_name, email, student_id_number, course_name, year, ethereum_address FROM students WHERE id = $1", 
+          [req.user.id]
+      );
+      res.json(fullProfile.rows[0]);
+  } catch (error) {
+      console.error("Error fetching me:", error);
+      res.status(500).json({ error: "Failed to fetch profile." });
+  }
+});
+
+
+// 3. User & Admin Helpers
+
+
+app.get("/api/certificates", authenticateToken, async (req, res) => {
+    try {
+        // Admin Helper: Get all certificates with recipient names
+        // JOIN certificates -> students to get names
+        // JOIN certificates -> nfts to get token_id/hash (optional, but good for history)
+        const query = `
+            SELECT 
+                c.id, 
+                c.title, 
+                c.department, 
+                c.issue_date AS created_at, 
+                s.full_name AS student_name,
+                n.token_id,
+                n.transaction_hash
+            FROM certificates c
+            JOIN students s ON c.recipient_id = s.id
+            LEFT JOIN nfts n ON c.id = n.certificate_id
+            ORDER BY c.issue_date DESC
+        `;
+        const result = await dbPool.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Error fetching certificates:", error);
+        res.status(500).json({ error: "Failed to fetch certificates." });
+    }
+});
+
+app.get("/api/students", authenticateToken, async (req, res) => {
+  try {
+    const result = await dbPool.query(
+      "SELECT id, full_name as name, student_id_number as roll, ethereum_address as wallet FROM students ORDER BY full_name ASC"
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching students:", error);
+    res.status(500).json({ error: "Failed to fetch students." });
+  }
+});
+
 async function getStudentById(id) {
+
   const result = await dbPool.query(
     "SELECT id, full_name, email FROM students WHERE id = $1 LIMIT 1",
     [id]
@@ -161,21 +160,51 @@ app.get("/api/wallet/assets", authenticateToken, async (req, res) => {
     const student = await getStudentById(req.user.id);
     if (!student) return res.status(404).json({ error: "User not found." });
 
-    // Placeholder mock assets
-    const mockAssets = [
-      { id: 1, title: "BSc Computer Science", issuer: "XYZ University", imageUrl: "..." },
-      { id: 2, title: "Blockchain Workshop", issuer: "XYZ University", imageUrl: "..." },
-    ];
+    // REFACTOR: Schema Alignment & JOIN Fix
+    // We filter by 'recipient_id' in the 'certificates' table, which is linked to 'nfts.certificate_id'.
+    // NOTE: We alias 'ipfs_cid' as 'token_uri' to keep the frontend happy.
+    const query = `
+      SELECT 
+        n.token_id, 
+        n.transaction_hash, 
+        n.ipfs_cid AS token_uri,
+        c.title,
+        c.description,
+        c.issue_date,
+        c.department
+      FROM nfts n
+      JOIN certificates c ON n.certificate_id = c.id
+      WHERE c.recipient_id = $1
+      ORDER BY n.token_id DESC
+    `;
+    
+    const result = await dbPool.query(query, [student.id]);
+
+    const assets = result.rows.map(row => {
+      return {
+        id: row.token_id, 
+        tokenId: row.token_id,
+        title: row.title || "Student NFT", // Use real title
+        description: row.description,
+        issueDate: row.issue_date,
+        department: row.department,
+        issuer: "University",
+        imageUrl: row.token_uri ? row.token_uri.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/') : null,
+        transactionHash: row.transaction_hash,
+        ipfsCid: row.token_uri 
+      };
+    });
 
     res.json({
       user: { id: student.id, name: student.full_name },
-      assets: mockAssets,
+      assets: assets,
     });
   } catch (error) {
     console.error("Error fetching assets:", error);
     res.status(500).json({ error: "Failed to fetch wallet assets." });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`✅ Server running on http://localhost:${port}`);

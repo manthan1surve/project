@@ -96,12 +96,7 @@ async function handleAdminLogin() {
   isLoading.value = true
 
   try {
-    /* ===============================
-       🔴 ORIGINAL LOGIN LOGIC (COMMENTED)
-       =============================== */
-
-    /*
-    const res = await fetch('http://localhost:5173', {
+    const res = await fetch('http://localhost:3001/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -112,32 +107,10 @@ async function handleAdminLogin() {
 
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Login failed')
-    */
 
-    /* ===============================
-       🟢 DUMMY ADMIN LOGIN
-       =============================== */
-
-    // Fake delay to simulate API
-    await new Promise(resolve => setTimeout(resolve, 900))
-
-    // Hardcoded credentials
-    if (
-      email.value !== 'admin@example.com' ||
-      password.value !== 'admin123'
-    ) {
-      throw new Error('Invalid admin credentials')
-    }
-
-    // Optional: mark admin session
-    localStorage.setItem(
-      'admin',
-      JSON.stringify({
-        email: email.value,
-        role: 'admin',
-        loggedInAt: new Date().toISOString()
-      })
-    )
+    // Save Admin Token
+    localStorage.setItem('adminToken', data.token)
+    localStorage.setItem('adminUser', JSON.stringify(data.user))
 
     // Redirect to admin dashboard
     router.push('/admin-dashboard')
