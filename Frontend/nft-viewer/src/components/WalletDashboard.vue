@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { Wallet } from 'ethers';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3001';
 
 const status = ref('loading'); // 'loading' | 'no-wallet' | 'locked' | 'unlocked'
 const isBusy = ref(false);

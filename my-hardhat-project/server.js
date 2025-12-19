@@ -100,6 +100,6 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 });
 
 // --- Server Startup ---
-app.listen(3001, () => {
-  console.log("✅ Server listening on port 3001");
+app.listen(3002, () => {
+  console.log("✅ Server listening on port 3002");
 });

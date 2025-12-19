@@ -8,9 +8,9 @@ import router from './router'
 // Keep your friend's Tailwind/Admin styles so the UI structure stays correct
 import './assets/tailwind.css'
 import './assets/admin.css'
+import './assets/base.css'
 
-// Keep your custom styles (from your stash)
-import './assets/main.css'
+
 
 const app = createApp(App)
 

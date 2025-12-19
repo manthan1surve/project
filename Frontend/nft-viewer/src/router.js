@@ -1,69 +1,38 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// --- Imports ---
-
-// 1. Shared & Friend's Components (Upstream)
+// 1. Views
 import RegistrationPage from './views/RegistrationPage.vue'
+import LoginPage from './components/LoginPage.vue'
 import AdminLogin from './views/AdminLogin.vue'
-import NFTGallery from './components/NFTGallery.vue'
-import BabylonScene from './components/BabylonScene.vue'
-import StudentDasboard from './components/StudentDasboard.vue'
-import AdminDasboard from './components/AdminDasboard.vue'
 
-// 2. Your Components (Stashed)
-// We are using YOUR Login Page from 'views' (ignoring his 'components' version)
-import LoginPage from './views/LoginPage.vue'
+// 2. Components
 import WalletDashboard from './components/WalletDashboard.vue'
 
+import StudentDashboard from './components/StudentDashboard.vue'
+import AdminDashboard from './components/AdminDashboard.vue'
+import NFTGallery from './components/NFTGallery.vue'
+import BabylonScene from './components/BabylonScene.vue'
+
+// 3. Public Search
+// Ensure you actually renamed components/LoginPage.vue to PublicGallerySearch.vue
+import PublicGallerySearch from './views/PublicGallerySearch.vue'
+
 const routes = [
-  // --- Friend's Routes ---
-  {
-    path: '/',
-    name: 'Home', // Renamed to avoid conflict with 'Register' below
-    component: RegistrationPage
-  },
-  {
-    path: '/admin-dashboard',
-    name: 'AdminDasboard',
-    component: AdminDasboard
-  },
-  {
-    path: '/babylon',
-    name: 'BabylonScene',
-    component: BabylonScene
-  },
-  {
-    path: '/student-dashboard',
-    name: 'StudentDasboard',
-    component: StudentDasboard
-  },
-  {
-    path: '/admin-login',
-    name: 'AdminLogin',
-    component: AdminLogin
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: LoginPage
-  },
+  { path: '/', redirect: '/register' },
+  { path: '/register', name: 'Register', component: RegistrationPage },
+  { path: '/login', name: 'Login', component: LoginPage },
+  { path: '/wallet', name: 'WalletDashboard', component: WalletDashboard },
+  { path: '/student-dashboard', name: 'StudentDashboard', component: StudentDashboard },
+  { path: '/view-gallery', name: 'PublicSearch', component: PublicGallerySearch },
   {
     path: '/gallery',
     name: 'Gallery',
-    component: NFTGallery
+    component: NFTGallery,
+    props: route => ({ address: route.query.address })
   },
-
-  // --- Your Routes (from Stash) ---
-  {
-    path: '/register',
-    name: 'Register',
-    component: RegistrationPage
-  },
-  {
-    path: '/wallet',
-    name: 'WalletDashboard',
-    component: WalletDashboard
-  }
+  { path: '/admin-login', name: 'AdminLogin', component: AdminLogin },
+  { path: '/admin-dashboard', name: 'AdminDashboard', component: AdminDashboard },
+  { path: '/babylon', name: 'BabylonScene', component: BabylonScene }
 ]
 
 const router = createRouter({

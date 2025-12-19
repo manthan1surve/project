@@ -23,7 +23,11 @@ const PINATA_API_KEY = process.env.PINATA_API_KEY;
 const PINATA_SECRET_API_KEY = process.env.PINATA_API_SECRET;
 const PINATA_BASE_URL = "https://api.pinata.cloud/pinning";
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 app.use(express.json());
 
 // --- Pinata Helpers (From Upstream) ---
