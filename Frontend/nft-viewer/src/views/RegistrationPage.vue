@@ -44,6 +44,7 @@
                     class="input-glass"
                     placeholder="John Doe"
                   />
+                  <span class="text-[10px] text-white/40 block mt-1 italic ml-1">Example: FirstName MiddleName Surname</span>
                 </div>
 
                 <div>
@@ -76,8 +77,9 @@
                     required
                     type="text"
                     class="input-glass"
-                    placeholder="S123456"
+                    placeholder="e.g. 25tbscit006"
                   />
+                  <span class="text-[10px] text-white/40 block mt-1 italic ml-1 leading-tight">Format: [Year][FY/SY/TY][Dept][RollNo]</span>
                 </div>
 
                 <div>
@@ -89,6 +91,7 @@
                     class="input-glass"
                     placeholder="BSc IT"
                   />
+                  <span class="text-[10px] text-white/40 block mt-1 italic ml-1">Default prefilled as BSCIT</span>
                 </div>
 
                 <div class="md:col-span-2">
@@ -145,7 +148,7 @@ const formData = ref({
   email: '',
   password: '',
   rollNumber: '',
-  courseName: '',
+  courseName: 'BSCIT',
   year: ''
 });
 
