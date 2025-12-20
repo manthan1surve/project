@@ -1,1 +1,14 @@
-node_modules
+# Standard Ignore
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+
+# NOT IGNORING ENV (As requested for team sharing)
+# .env is deliberately committed
+# !.env
+
+# Hardhat
+cache/
+artifacts/
