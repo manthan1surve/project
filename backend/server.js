@@ -13,8 +13,8 @@ const FormData = require('form-data');
 // Node.js file system module
 const fs = require('fs'); 
 
-// Import custom database connection pool
-const dbPool = require("./db");
+// Import Supabase client
+const supabase = require("./db");
 // Import wallet creation utility
 const { createEncryptedWallet } = require("./walletService");
 // Import authentication logic (registration and login)
@@ -59,12 +59,16 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
       if (!student) return res.status(404).json({ error: "User not found." });
       
       // Fetch extended profile details
-      const fullProfile = await dbPool.query(
-          "SELECT id, full_name, email, student_id_number, course_name, year, ethereum_address FROM students WHERE id = $1", 
-          [req.user.id]
-      );
+      const { data: fullProfile, error } = await supabase
+          .from('students')
+          .select('id, full_name, email, student_id_number, course_name, year, ethereum_address')
+          .eq('id', req.user.id)
+          .single();
+      
+      if (error) throw error;
+      
       // Respond with the full profile object
-      res.json(fullProfile.rows[0]);
+      res.json(fullProfile);
   } catch (error) {
       console.error("Error fetching me:", error);
       res.status(500).json({ error: "Failed to fetch profile." });
@@ -77,23 +81,33 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 // Admin route to get all certificates issued in the system
 app.get("/api/certificates", authenticateToken, async (req, res) => {
     try {
-        // Complex query joining certificates, students, and NFTs to show full history
-        const query = `
-            SELECT 
-                c.id, 
-                c.title, 
-                c.department, 
-                c.issue_date AS created_at, 
-                s.full_name AS student_name,
-                n.token_id,
-                n.transaction_hash
-            FROM certificates c
-            JOIN students s ON c.recipient_id = s.id
-            LEFT JOIN nfts n ON c.id = n.certificate_id
-            ORDER BY c.issue_date DESC
-        `;
-        const result = await dbPool.query(query);
-        res.json(result.rows);
+        // Fetch certificates with related student and nft data
+        const { data, error } = await supabase
+            .from('certificates')
+            .select(`
+                id, 
+                title, 
+                department, 
+                issue_date, 
+                students (full_name),
+                nfts (token_id, transaction_hash)
+            `)
+            .order('issue_date', { ascending: false });
+
+        if (error) throw error;
+
+        // Map to flat structure to match previous API response
+        const mappedResults = data.map(c => ({
+            id: c.id,
+            title: c.title,
+            department: c.department,
+            created_at: c.issue_date,
+            student_name: c.students?.full_name,
+            token_id: c.nfts?.[0]?.token_id,
+            transaction_hash: c.nfts?.[0]?.transaction_hash
+        }));
+
+        res.json(mappedResults);
     } catch (error) {
         console.error("Error fetching certificates:", error);
         res.status(500).json({ error: "Failed to fetch certificates." });
@@ -103,10 +117,22 @@ app.get("/api/certificates", authenticateToken, async (req, res) => {
 // Admin route to fetch all registered students (useful for dropdowns)
 app.get("/api/students", authenticateToken, async (req, res) => {
   try {
-    const result = await dbPool.query(
-      "SELECT id, full_name as name, student_id_number as roll, ethereum_address as wallet FROM students ORDER BY full_name ASC"
-    );
-    res.json(result.rows);
+    const { data, error } = await supabase
+      .from('students')
+      .select('id, full_name, student_id_number, ethereum_address')
+      .order('full_name', { ascending: true });
+
+    if (error) throw error;
+
+    // Map fields to match pre-existing aliases (name, roll, wallet)
+    const mappedStudents = data.map(s => ({
+        id: s.id,
+        name: s.full_name,
+        roll: s.student_id_number,
+        wallet: s.ethereum_address
+    }));
+    
+    res.json(mappedStudents);
   } catch (error) {
     console.error("Error fetching students:", error);
     res.status(500).json({ error: "Failed to fetch students." });
@@ -114,16 +140,24 @@ app.get("/api/students", authenticateToken, async (req, res) => {
 });
 
 // Helper function to fetch student by ID from database
+// Helper function to fetch student by ID from database
 async function getStudentById(id) {
-  const result = await dbPool.query(
-    "SELECT id, full_name, email FROM students WHERE id = $1 LIMIT 1",
-    [id]
-  );
-  return result.rows[0];
+  const { data, error } = await supabase
+    .from('students')
+    .select('id, full_name, email')
+    .eq('id', id)
+    .single();
+    
+  if (error) {
+      console.error("getStudentById Error:", error);
+      return null;
+  }
+  return data;
 }
 
 // 4. Custodial Wallet APIs
 
+// Endpoint to create a new encrypted wallet for a student
 // Endpoint to create a new encrypted wallet for a student
 app.post("/api/wallet/create", authenticateToken, async (req, res) => {
   try {
@@ -138,22 +172,23 @@ app.post("/api/wallet/create", authenticateToken, async (req, res) => {
     const { address, encryptedJson } = await createEncryptedWallet(password);
     
     // Upsert the wallet into the database linked to the student
-    const query = `
-      INSERT INTO wallets (user_id, public_address, encrypted_json)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (user_id)
-      DO UPDATE SET
-        public_address = EXCLUDED.public_address,
-        encrypted_json = EXCLUDED.encrypted_json,
-        updated_at = NOW()
-      RETURNING id, user_id, public_address;
-    `;
+    const { data, error } = await supabase
+        .from('wallets')
+        .upsert({
+            user_id: student.id,
+            public_address: address,
+            encrypted_json: encryptedJson,
+            updated_at: new Date()
+        }, { onConflict: 'user_id' })
+        .select('id, user_id, public_address')
+        .single();
 
-    const result = await dbPool.query(query, [student.id, address, encryptedJson]);
+    if (error) throw error;
+
     // Send success response
     res.status(201).json({
       message: "Wallet created and stored successfully.",
-      wallet: { id: result.rows[0].id, public_address: result.rows[0].public_address },
+      wallet: { id: data.id, public_address: data.public_address },
     });
   } catch (error) {
     console.error("Error creating wallet:", error);
@@ -162,22 +197,29 @@ app.post("/api/wallet/create", authenticateToken, async (req, res) => {
 });
 
 // Endpoint to fetch the student's encrypted wallet for client-side unlocking
+// Endpoint to fetch the student's encrypted wallet for client-side unlocking
 app.get("/api/wallet/me", authenticateToken, async (req, res) => {
   try {
     const student = await getStudentById(req.user.id);
     if (!student) return res.status(404).json({ error: "User not found." });
 
-    const result = await dbPool.query(
-      "SELECT public_address, encrypted_json FROM wallets WHERE user_id = $1 LIMIT 1",
-      [student.id]
-    );
+    const { data: wallet, error } = await supabase
+        .from('wallets')
+        .select('public_address, encrypted_json')
+        .eq('user_id', student.id)
+        .single();
+        
+    // .single() returns error if not found, we handle it gently
+    if (error && error.code !== 'PGRST116') { // PGRST116 is 'not found'
+        throw error;
+    }
 
-    if (result.rows.length === 0) return res.status(404).json({ error: "No wallet found." });
+    if (!wallet) return res.status(404).json({ error: "No wallet found." });
 
     // Returns the encrypted keystore JSON to the client
     res.json({
-      public_address: result.rows[0].public_address,
-      encrypted_json: result.rows[0].encrypted_json,
+      public_address: wallet.public_address,
+      encrypted_json: wallet.encrypted_json,
     });
   } catch (error) {
     console.error("Error fetching wallet:", error);
@@ -186,43 +228,47 @@ app.get("/api/wallet/me", authenticateToken, async (req, res) => {
 });
 
 // Endpoint to fetch all NFT assets (certificates) owned by the current student
+// Endpoint to fetch all NFT assets (certificates) owned by the current student
 app.get("/api/wallet/assets", authenticateToken, async (req, res) => {
   try {
     const student = await getStudentById(req.user.id);
     if (!student) return res.status(404).json({ error: "User not found." });
 
-    // JOIN nfts and certificates tables to get metadata for the student's tokens
-    const query = `
-      SELECT 
-        n.token_id, 
-        n.transaction_hash, 
-        n.ipfs_cid AS token_uri,
-        c.title,
-        c.description,
-        c.issue_date,
-        c.department
-      FROM nfts n
-      JOIN certificates c ON n.certificate_id = c.id
-      WHERE c.recipient_id = $1
-      ORDER BY n.token_id DESC
-    `;
-    
-    const result = await dbPool.query(query, [student.id]);
+    // JOIN nfts and certificates via Supabase relations
+    const { data, error } = await supabase
+        .from('nfts')
+        .select(`
+            token_id, 
+            transaction_hash, 
+            ipfs_cid,
+            certificates!inner (
+                title,
+                description,
+                issue_date,
+                department,
+                recipient_id
+            )
+        `)
+        .eq('certificates.recipient_id', student.id)
+        .order('token_id', { ascending: false });
+
+    if (error) throw error;
 
     // Map database results to frontend-friendly asset objects
-    const assets = result.rows.map(row => {
+    const assets = data.map(row => {
+      const cert = row.certificates;
       return {
         id: row.token_id, 
         tokenId: row.token_id,
-        title: row.title || "Student NFT", 
-        description: row.description,
-        issueDate: row.issue_date,
-        department: row.department,
+        title: cert.title || "Student NFT", 
+        description: cert.description,
+        issueDate: cert.issue_date,
+        department: cert.department,
         issuer: "University",
         // Format IPFS URI as a Pinata gateway URL for easy image display
-        imageUrl: row.token_uri ? row.token_uri.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/') : null,
+        imageUrl: row.ipfs_cid ? row.ipfs_cid.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/') : null,
         transactionHash: row.transaction_hash,
-        ipfsCid: row.token_uri 
+        ipfsCid: row.ipfs_cid 
       };
     });
 
@@ -235,6 +281,47 @@ app.get("/api/wallet/assets", authenticateToken, async (req, res) => {
     console.error("Error fetching assets:", error);
     res.status(500).json({ error: "Failed to fetch wallet assets." });
   }
+});
+
+// --- IPFS PROXY ---
+// --- IPFS PROXY ---
+// Relays IPFS requests to avoid CORS issues in the browser
+// Fallback list of public gateways
+const IPFS_GATEWAYS = [
+    "https://gateway.pinata.cloud/ipfs/",
+    "https://ipfs.io/ipfs/",
+    "https://cf-ipfs.com/ipfs/",
+    "https://dweb.link/ipfs/"
+];
+
+app.get("/api/ipfs/:cid", async (req, res) => {
+    const { cid } = req.params;
+    if (!cid) return res.status(400).send("CID is required");
+
+    for (const gateway of IPFS_GATEWAYS) {
+        try {
+            const gatewayUrl = `${gateway}${cid}`;
+            // console.log(`Attempting fetch from: ${gateway}`); // Optional debug
+            
+            const response = await axios.get(gatewayUrl, {
+                responseType: 'stream',
+                timeout: 5000 // 5s timeout per gateway
+            });
+            
+            // If successful, pipe and exit
+            res.setHeader('Content-Type', response.headers['content-type']);
+            response.data.pipe(res);
+            return;
+            
+        } catch (error) {
+            // Continue to next gateway
+            // console.error(`Failed ${gateway}: ${error.message}`);
+        }
+    }
+
+    // If all fail
+    console.error(`All gateways failed for CID: ${cid}`);
+    res.status(502).send(`Failed to fetch IPFS content for ${cid}`);
 });
 
 // Start the server and listen for incoming HTTP requests

@@ -125,19 +125,49 @@ async function login(req, res) {
       return res.status(400).json({ error: 'email and password are required.' });
     }
 
-    // --- HARDCODED ADMIN BACKDOOR ---
-    if (email === 'admin@example.com' && password === 'admin123') {
-       const adminToken = signToken({ id: 99999, email: 'admin@example.com', role: 'admin' });
-       return res.json({
-         message: 'Admin Login successful.',
-         token: adminToken,
-         user: {
-           id: 99999,
-           email: 'admin@example.com',
-           full_name: 'Sys Admin'
-         }
-       });
+    // --- BACKUP ADMIN (Hardcoded) ---
+    if (email === 'backup_admin@test.com' && password === 'admin_backup_123') {
+        const adminToken = signToken({ id: 'backup-admin-id', email, role: 'admin' });
+        return res.json({
+             message: 'Backup Admin Login successful.',
+             token: adminToken,
+             user: {
+               id: 'backup-admin-id',
+               email: email,
+               full_name: 'Backup Admin',
+               role: 'admin'
+             }
+        });
     }
+
+    // --- ADMIN LOGIN (DB Check) ---
+    // 1. Check 'admins' table
+    const { data: adminUser, error: adminError } = await supabase
+        .from('admins')
+        .select('id, email, password_hash, username, role')
+        .eq('email', email)
+        .single();
+    
+    // Only proceed if an admin user is found (ignore "row not found" error safely by checking data)
+    if (adminUser) {
+        // Verify Password
+        const isAdminMatch = await bcrypt.compare(password, adminUser.password_hash);
+        
+        if (isAdminMatch) {
+            const adminToken = signToken({ id: adminUser.id, email: adminUser.email, role: adminUser.role });
+            return res.json({
+                 message: 'Admin Login successful.',
+                 token: adminToken,
+                 user: {
+                   id: adminUser.id,
+                   email: adminUser.email,
+                   full_name: adminUser.username || 'Admin',
+                   role: adminUser.role
+                 }
+            });
+        }
+    }
+    // -------------------------
 
     // Look up student record from database by email
     const { data: user, error } = await supabase

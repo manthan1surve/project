@@ -268,14 +268,16 @@ function openVerification(hash) {
 // --- IPFS Helper ---
 /**
  * Converts an 'ipfs://' URI to a HTTP Gateway URL.
+ * Using Backend Proxy to bypass CORS.
  */
 function getIpfsUrl(cid) {
   if (!cid) return '';
   // If it's already a http link, return it
   if (cid.startsWith('http')) return cid;
-  // If it is ipfs:// protocol, strip it
+  
+  // Strip 'ipfs://' protocol if present
   const clean = cid.replace('ipfs://', '');
-  return `https://gateway.pinata.cloud/ipfs/${clean}`;
+  return `${API_BASE_URL}/api/ipfs/${clean}`;
 }
 </script>
 

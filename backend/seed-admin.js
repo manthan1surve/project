@@ -1,53 +1,45 @@
-const db = require('./db');
 const bcrypt = require('bcryptjs');
+const supabase = require('./db');
 
 async function seedAdmin() {
-  try {
     const email = 'admin@example.com';
     const password = 'admin123';
-    
-    // Check if exists
-    const check = await db.query("SELECT id FROM students WHERE email = $1", [email]);
-    if (check.rows.length > 0) {
-      console.log("⚠️ Admin user already exists.");
-      process.exit(0);
+    const username = 'admin';
+
+    try {
+        console.log("🌱 Seeding Admin...");
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Check if admin exists first
+        const { data: existing, error: findError } = await supabase
+            .from('admins')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (existing) {
+             console.log('⚠️ Admin already exists. Skipping.');
+             return;
+        }
+
+        const { data, error } = await supabase
+            .from('admins')
+            .insert([{
+                username,
+                email,
+                password_hash: hashedPassword,
+                role: 'super_admin'
+            }])
+            .select();
+
+        if (error) {
+            console.error('❌ Error seeding admin:', error.message);
+        } else {
+            console.log('✅ Admin seeded successfully:', email);
+        }
+    } catch (err) {
+        console.error('❌ Seed script failed:', err);
     }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert Admin
-    // We treat the admin as a 'Student' for auth purposes for now, 
-    // since the auth system is single-table based.
-    await db.query(
-      `INSERT INTO students (
-        full_name, 
-        email, 
-        password, 
-        student_id_number, 
-        course_name, 
-        year, 
-        ethereum_address
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [
-        'System Admin', 
-        email, 
-        hashedPassword, 
-        'ADMIN001', 
-        'Administration', 
-        'Staff', 
-        '0x0000000000000000000000000000000000000000' // Dummy address
-      ]
-    );
-
-    console.log("✅ Admin user created successfully.");
-    console.log("📧 Email: " + email);
-    console.log("🔑 Password: " + password);
-  } catch (err) {
-    console.error("❌ Error seeding admin:", err);
-  } finally {
-    process.exit(); // Force exit to close pool
-  }
 }
 
 seedAdmin();
