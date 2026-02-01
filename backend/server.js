@@ -4,6 +4,8 @@ require("dotenv").config();
 const express = require("express");
 // Enable Cross-Origin Resource Sharing (allows frontend to access the API)
 const cors = require("cors");
+// Security headers middleware
+const helmet = require("helmet");
 // Middleware for handling file uploads
 const multer = require('multer'); 
 // HTTP client for making external requests (e.g. to IPFS)
@@ -23,6 +25,10 @@ const { register, login } = require("./controllers/authController");
 const { authenticateToken } = require("./middleware/authMiddleware");
 // Import NFT-specific routes
 const nftRoutes = require("./routes/nftRoutes");
+// Import rate limiters
+const { authLimiter, apiLimiter, mintLimiter } = require("./middleware/rateLimiter");
+// Import error handlers
+const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 
 // Create Express application instance
 const app = express();
@@ -31,25 +37,40 @@ const port = 3001;
 
 // CORS configuration to allow local frontend access
 // CORS CONFIGURATION
+// Security headers (helmet)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow IPFS images
+  contentSecurityPolicy: false // Disable CSP for development
+}));
+
+// CORS configuration
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173'], // Allow explicit origins
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// Parse incoming JSON request bodies
-app.use(express.json());
+
+// Parse incoming JSON request bodies (with size limit)
+app.use(express.json({ limit: '10mb' }));
+
+// Apply general rate limiter to all API routes
+app.use('/api/', apiLimiter);
 
 // --- API ROUTES ---
 
 // 1. NFT-related endpoints (Minting, Issuance)
 app.use("/api/nft", nftRoutes);
 
-// 2. Authentication endpoints
+// 2. Verification endpoints (Public + Admin)
+const verificationRoutes = require("./routes/verificationRoutes");
+app.use("/api/verify", verificationRoutes);
+
+// 2. Authentication endpoints (with stricter rate limit)
 // Public registration route
-app.post("/api/auth/register", register);
+app.post("/api/auth/register", authLimiter, register);
 // Public login route
-app.post("/api/auth/login", login);
+app.post("/api/auth/login", authLimiter, login);
 
 // Private route to get current user's profile
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
@@ -87,24 +108,25 @@ app.get("/api/certificates", authenticateToken, async (req, res) => {
             .select(`
                 id, 
                 title, 
-                department, 
+                department,
+                description,
                 issue_date, 
-                students (full_name),
-                nfts (token_id, transaction_hash)
+                student:students (id, full_name, student_id_number, course_name),
+                nft:nfts (token_id, transaction_hash, ipfs_cid)
             `)
             .order('issue_date', { ascending: false });
 
         if (error) throw error;
 
-        // Map to flat structure to match previous API response
+        // Map to structure expected by CertificatesRegistry
         const mappedResults = data.map(c => ({
             id: c.id,
             title: c.title,
             department: c.department,
-            created_at: c.issue_date,
-            student_name: c.students?.full_name,
-            token_id: c.nfts?.[0]?.token_id,
-            transaction_hash: c.nfts?.[0]?.transaction_hash
+            description: c.description,
+            issue_date: c.issue_date,
+            student: c.student || null,
+            nft: c.nft?.[0] || null // nft is returned as array, take first
         }));
 
         res.json(mappedResults);
@@ -324,7 +346,14 @@ app.get("/api/ipfs/:cid", async (req, res) => {
     res.status(502).send(`Failed to fetch IPFS content for ${cid}`);
 });
 
+// --- ERROR HANDLING (must be last) ---
+// 404 handler for undefined routes
+app.use(notFoundHandler);
+// Global error handler
+app.use(errorHandler);
+
 // Start the server and listen for incoming HTTP requests
 app.listen(port, () => {
   console.log(`✅ Server running on http://localhost:${port}`);
+  console.log(`🛡️  Security: Helmet enabled, Rate limiting active`);
 });

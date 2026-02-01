@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { Wallet } from 'ethers'; // Ethers.js for local wallet management
 
 // --- Configuration ---
@@ -265,6 +265,46 @@ function openVerification(hash) {
   window.open(`https://sepolia.etherscan.io/tx/${hash}`, '_blank');
 }
 
+// --- QR Code Modal ---
+const qrModal = reactive({
+  show: false,
+  loading: false,
+  qrCode: null,
+  tokenId: null
+});
+
+async function showQRCode(asset) {
+  qrModal.show = true;
+  qrModal.loading = true;
+  qrModal.tokenId = asset.tokenId;
+  
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/verify/qr/${asset.tokenId}`);
+    if (res.ok) {
+      const data = await res.json();
+      qrModal.qrCode = data.qrCode;
+    } else {
+      throw new Error('Failed to generate QR');
+    }
+  } catch (err) {
+    console.error('QR error:', err);
+    alert('Failed to generate QR code');
+    qrModal.show = false;
+  } finally {
+    qrModal.loading = false;
+  }
+}
+
+async function copyVerificationLink(tokenId) {
+  const link = `${window.location.origin}/verify/${tokenId}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    alert('Verification link copied!');
+  } catch {
+    prompt('Copy this link:', link);
+  }
+}
+
 // --- IPFS Helper ---
 /**
  * Converts an 'ipfs://' URI to a HTTP Gateway URL.
@@ -504,17 +544,78 @@ function getIpfsUrl(cid) {
               </p>
            </div>
 
-           <button 
-             @click="openVerification(selectedAsset.transactionHash)"
-             class="w-full bg-white text-slate-900 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-           >
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-             </svg>
-             Verify on Blockchain
-           </button>
+           <!-- Action Buttons -->
+           <div class="space-y-3">
+             <!-- Share QR Button -->
+             <button 
+               @click="showQRCode(selectedAsset)"
+               class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+             >
+               <span>📱</span>
+               Share QR Code
+             </button>
+
+             <!-- Verify on Blockchain Button -->
+             <button 
+               @click="openVerification(selectedAsset.transactionHash)"
+               class="w-full bg-white text-slate-900 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+             >
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+               </svg>
+               Verify on Blockchain
+             </button>
+           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div v-if="qrModal.show" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90" @click.self="qrModal.show = false">
+      <div class="bg-[#1b2127] w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-[#3b4754] p-6">
+        <h3 class="text-white text-lg font-bold mb-4 text-center">Share Certificate</h3>
+        
+        <div v-if="qrModal.loading" class="text-center py-8">
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500 mx-auto"></div>
+          <p class="text-gray-400 mt-3 text-sm">Generating QR...</p>
+        </div>
+        
+        <div v-else>
+          <!-- Tap QR to open link -->
+          <a 
+            :href="`/verify/${qrModal.tokenId}`" 
+            target="_blank"
+            class="block cursor-pointer"
+          >
+            <img v-if="qrModal.qrCode" :src="qrModal.qrCode" alt="QR Code" class="mx-auto rounded-lg mb-2 border border-gray-700 hover:border-sky-500 transition-colors" />
+          </a>
+          <p class="text-gray-500 text-xs text-center mb-4">
+            Tap QR to open verification page
+          </p>
+          <div class="space-y-2">
+            <!-- Open Link Button (for mobile) -->
+            <a 
+              :href="`/verify/${qrModal.tokenId}`"
+              target="_blank"
+              class="w-full px-4 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+            >
+              🔗 Open Verification Page
+            </a>
+            <button 
+              @click="copyVerificationLink(qrModal.tokenId)"
+              class="w-full px-4 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+            >
+              📋 Copy Link
+            </button>
+            <button 
+              @click="qrModal.show = false"
+              class="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl text-sm transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 

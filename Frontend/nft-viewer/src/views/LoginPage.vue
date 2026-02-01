@@ -1,78 +1,83 @@
 <template>
-  <div class="relative min-h-screen flex items-center justify-center overflow-hidden">
-    <!-- Video Background -->
-    <!-- Video Background Removed -->
+  <div class="min-h-screen bg-[#0d1117]">
+    <AppHeader />
+    
+    <div class="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+      <!-- Login Card -->
+      <div class="relative z-10 w-full max-w-md px-4">
+        <div class="glass-card p-8" data-particle-target="frame">
+          <h1 class="text-3xl font-bold text-white text-center mb-2" data-particle-target="detail">Student Login</h1>
+          <p class="text-gray-400 text-center mb-8">Access your academic wallet</p>
 
-    <!-- Login Card -->
-    <div class="relative z-10 w-full max-w-md px-4">
-      <div class="glass-card p-8" data-particle-target="frame">
-        <h1 class="text-3xl font-bold text-white text-center mb-2" data-particle-target="detail">Student Login</h1>
-        <p class="text-gray-400 text-center mb-8">Access your academic wallet</p>
+          <form @submit.prevent="handleLogin" class="space-y-6">
+            
+            <!-- Email -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Email</label>
+              <input
+                v-model="email"
+                type="email"
+                required
+                class="input-glass"
+                placeholder="student@university.edu"
+                data-particle-target="detail"
+              />
+            </div>
 
-        <form @submit.prevent="handleLogin" class="space-y-6">
-          
-          <!-- Email -->
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Email</label>
-            <input
-              v-model="email"
-              type="email"
-              required
-              class="input-glass"
-              placeholder="student@university.edu"
+            <!-- Password -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Password</label>
+              <input
+                v-model="password"
+                type="password"
+                required
+                class="input-glass"
+                placeholder="••••••••"
+                data-particle-target="detail"
+              />
+            </div>
+
+            <!-- Action -->
+            <button
+              type="submit"
+              :disabled="isLoading"
+              class="btn-primary w-full"
               data-particle-target="detail"
-            />
+            >
+              {{ isLoading ? 'Logging in...' : 'Sign In' }}
+            </button>
+          </form>
+
+          <!-- Footer -->
+          <div class="mt-6 text-center">
+               <p class="text-sm text-gray-400">
+                 Don't have an account? 
+                 <router-link to="/register" class="text-indigo-400 hover:text-indigo-300">Register</router-link>
+               </p>
+               <p class="mt-2">
+                 <router-link to="/view-gallery" class="text-xs text-gray-500 hover:text-gray-400">
+                   Public Gallery Search
+                 </router-link>
+               </p>
           </div>
 
-          <!-- Password -->
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Password</label>
-            <input
-              v-model="password"
-              type="password"
-              required
-              class="input-glass"
-              placeholder="••••••••"
-              data-particle-target="detail"
-            />
+          <!-- Error Message -->
+          <div v-if="errorMessage" class="mt-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-sm text-center">
+            {{ errorMessage }}
           </div>
-
-          <!-- Action -->
-          <button
-            type="submit"
-            :disabled="isLoading"
-            class="btn-primary w-full"
-            data-particle-target="detail"
-          >
-            {{ isLoading ? 'Logging in...' : 'Sign In' }}
-          </button>
-        </form>
-
-        <!-- Footer -->
-        <div class="mt-6 text-center">
-             <p class="text-sm text-gray-400">
-               Don't have an account? 
-               <router-link to="/register" class="text-indigo-400 hover:text-indigo-300">Register</router-link>
-             </p>
-             <p class="mt-2">
-               <router-link to="/view-gallery" class="text-xs text-gray-500 hover:text-gray-400">
-                 Public Gallery Search
-               </router-link>
-             </p>
-        </div>
-
-        <!-- Error Message -->
-        <div v-if="errorMessage" class="mt-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-sm text-center">
-          {{ errorMessage }}
         </div>
       </div>
     </div>
+    
+    <AppFooter />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import AppHeader from '../components/AppHeader.vue'
+import AppFooter from '../components/AppFooter.vue'
 
 const router = useRouter()
 const email = ref('')
