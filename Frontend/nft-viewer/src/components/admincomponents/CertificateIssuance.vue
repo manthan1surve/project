@@ -1,6 +1,6 @@
 <template>
   <div class="glass p-6 rounded-xl border border-gray-700 bg-[#1b2127]">
-    <h2 class="text-xl font-bold text-white mb-4">Issue Certificate</h2>
+    <h2 class="text-xl font-bold text-white mb-4">Register Achievement Record</h2>
 
     <div class="flex flex-col gap-4">
       <!-- STUDENT DROPDOWN -->
@@ -18,9 +18,9 @@
         </select>
       </label>
 
-      <!-- CERTIFICATE TITLE -->
+      <!-- ACHIEVEMENT TITLE -->
       <label class="flex flex-col gap-1">
-        <span class="text-gray-400 text-sm">Certificate Title</span>
+        <span class="text-gray-400 text-sm">Achievement Title</span>
         <input
           v-model="title"
           class="input-field"
@@ -44,13 +44,13 @@
         <textarea
           v-model="description"
           class="input-field h-24 resize-none"
-          placeholder="Enter details about this certification..."
+          placeholder="Enter details about this record..."
         ></textarea>
       </label>
 
       <!-- FILE UPLOAD -->
       <label class="flex flex-col gap-1">
-        <span class="text-gray-400 text-sm">Certificate File (Image)</span>
+        <span class="text-gray-400 text-sm">Achievement File (Image)</span>
         <input type="file" @change="onFileChange" class="input-field p-2" accept="image/*" />
       </label>
 
@@ -61,7 +61,7 @@
         :disabled="!isFormValid || isIssuing"
         @click="issueCertificate"
       >
-        <span v-if="!isIssuing">Mint & Transfer NFT</span>
+        <span v-if="!isIssuing">Anchor Record on Blockchain</span>
         <span v-else class="flex items-center justify-center gap-2">
            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -160,7 +160,7 @@ async function issueCertificate() {
     // Check status
     if (res.ok) {
       // Notify admin of success and show blockchain proof
-      alert(`✅ Success! NFT Minted.\nTx Hash: ${data.nft.transactionHash}`)
+      alert(`✅ Success! Record Registered.\nTx Hash: ${data.nft.transactionHash}`)
       resetForm() // Clear the form for the next issuance
     } else {
       throw new Error(data.error || 'Failed to issue NFT')

@@ -12,3 +12,6 @@ build/
 # Hardhat
 cache/
 artifacts/
+node_modules/
+backend/node_modules/
+Frontend/nft-viewer/node_modules/

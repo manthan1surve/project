@@ -6,6 +6,8 @@ const supabase = require('../db');
 const { pinFileToIPFS, pinJSONToIPFS } = require('../utils/pinataHelpers');
 // Service for blockchain interaction (using Ethers.js)
 const { mintNFT } = require('../services/blockchainService');
+// Email service for notifications
+const { sendCertificateIssuedEmail } = require('../services/emailService');
 
 /**
  * Controller: issueNFT
@@ -34,11 +36,11 @@ async function issueNFT(req, res) {
 
         console.log(`[NFT Issue] Starting issuance for Student ID: ${recipientId}, Title: ${title}`);
 
-        // --- 3. Retrieve Student's Wallet Address ---
-        // We fetch the 'ethereum_address' that was generated for the student during registration.
+        // --- 3. Retrieve Student's Wallet Address and Email ---
+        // We fetch the 'ethereum_address' and email for notification.
         const { data: student, error: studentError } = await supabase
             .from('students')
-            .select('ethereum_address')
+            .select('ethereum_address, email, full_name')
             .eq('id', recipientId)
             .single();
 
@@ -112,7 +114,30 @@ async function issueNFT(req, res) {
 
         if (nftError) throw new Error(`NFT DB Error: ${nftError.message}`);
 
-        // --- 8. Final Success Response ---
+        // Log Activity
+        const { logActivity } = require('../services/activityLogger');
+        logActivity({
+            adminId: req.user ? req.user.id : null, // Assuming req.user is populated by middleware
+            action: 'ISSUE_CERTIFICATE',
+            details: `Issued '${title}' to student ID ${recipientId} (Token #${mintResult.tokenId})`,
+            req
+        });
+
+        // --- 8. Send Certificate Notification Email (non-blocking) ---
+        if (student.email) {
+            sendCertificateIssuedEmail({
+                email: student.email,
+                studentName: student.full_name || 'Student',
+                certificateTitle: title,
+                tokenId: mintResult.tokenId,
+                transactionHash: mintResult.transactionHash,
+                department: department || 'General'
+            }).then(result => {
+                if (!result.success) console.warn('Certificate email failed:', result.error);
+            });
+        }
+
+        // --- 9. Final Success Response ---
         res.status(201).json({
             message: "NFT issued successfully!",
             certificate: {

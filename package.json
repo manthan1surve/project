@@ -7,6 +7,7 @@
     "dev": "npm run dev --workspace=nft-viewer",
     "build": "npm run build --workspace=nft-viewer",
     "test": "npm run test --workspace=my-hardhat-project",
+    "test:backend": "cd backend && npm test",
     "deploy": "hardhat run scripts/deploy-nft.js --workspace=my-hardhat-project",
     "--- COMMAND CENTER ---": "---",
     "setup": "npm install && cd backend && npm install && cd ../Frontend/nft-viewer && npm install && cd ../../ocr-prototype && npm install && cd ../my-hardhat-project && npm install",
@@ -14,7 +15,8 @@
     "backend": "cd backend && npm start",
     "chain": "cd my-hardhat-project && npx hardhat node",
     "ops-deploy": "cd my-hardhat-project && npx hardhat run scripts/deploy-nft.js --network localhost",
-    "ops-server": "cd my-hardhat-project && node server.js"
+    "ops-server": "cd my-hardhat-project && node server.js",
+    "start-all": "run_app.bat"
   },
   "repository": {
     "type": "git",

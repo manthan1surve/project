@@ -12,13 +12,29 @@ import NFTGallery from './views/NFTGallery.vue'
 import BabylonScene from './views/BabylonScene.vue'
 import PublicGallerySearch from './views/PublicGallerySearch.vue'
 import VerifyCertificate from './views/VerifyCertificate.vue'
+import SettingsPage from './views/SettingsPage.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: LandingPage },
   { path: '/register', name: 'Register', component: RegistrationPage },
   { path: '/login', name: 'Login', component: LoginPage },
-  { path: '/wallet', name: 'WalletDashboard', component: WalletDashboard },
-  { path: '/student-dashboard', name: 'StudentDashboard', component: StudentDashboard },
+  // Student Portal Routes (Nested)
+  {
+    path: '/student',
+    component: () => import('./components/layouts/StudentLayout.vue'),
+    redirect: '/student/dashboard',
+    meta: { layoutKey: 'student_portal' },
+    children: [
+      { path: 'dashboard', name: 'StudentDashboard', component: StudentDashboard },
+      { path: 'wallet', name: 'WalletDashboard', component: WalletDashboard },
+      { path: 'settings', name: 'Settings', component: SettingsPage }
+    ]
+  },
+  
+  // Redirects for legacy routes
+  { path: '/student-dashboard', redirect: '/student/dashboard' },
+  { path: '/wallet', redirect: '/student/wallet' },
+  { path: '/settings', redirect: '/student/settings' },
   { path: '/view-gallery', name: 'PublicSearch', component: PublicGallerySearch },
   {
     path: '/gallery',
@@ -29,11 +45,16 @@ const routes = [
   { path: '/admin-login', name: 'AdminLogin', component: AdminLogin },
   { path: '/admin-dashboard', name: 'AdminDashboard', component: AdminDashboard },
   { path: '/babylon', name: 'BabylonScene', component: BabylonScene },
-  // Inspection routes (public)
+// Inspection routes (public)
   { path: '/verify', name: 'VerifySearch', component: VerifyCertificate },
   { path: '/verify/:tokenId', name: 'VerifyCertificate', component: VerifyCertificate },
   { path: '/inspect', redirect: '/verify' },
-  { path: '/inspect/:tokenId', redirect: to => `/verify/${to.params.tokenId}` }
+  { path: '/inspect/:tokenId', redirect: to => `/verify/${to.params.tokenId}` },
+  
+  // New Pages
+  { path: '/about', name: 'AboutUs', component: () => import('./views/AboutUs.vue') },
+  { path: '/PAGEDOESNOTEXIST', redirect: '/404' },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('./views/NotFound.vue') }
 ]
 
 const router = createRouter({

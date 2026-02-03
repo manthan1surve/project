@@ -1,18 +1,25 @@
 <template>
-  <ParticleBackground2 />
+
   
   <router-view v-slot="{ Component, route }">
     <transition name="fade" mode="out-in">
       <component 
         :is="Component" 
-        :key="route.path"
+        :key="route.meta.layoutKey || route.path"
       />
+
     </transition>
   </router-view>
 </template>
 
 <script setup>
-import ParticleBackground2 from './components/ParticleBackground2.vue';
+import { onMounted } from 'vue';
+
+import { initTheme } from './services/theme';
+
+onMounted(() => {
+  initTheme();
+});
 </script>
 
 <style>

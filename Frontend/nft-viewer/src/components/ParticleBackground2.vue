@@ -1,12 +1,14 @@
 <template>
   <canvas 
     ref="canvasRef" 
-    class="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none bg-black"
+    class="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none transition-colors duration-500"
+    :class="isDark ? 'bg-[#0d1117]' : 'bg-gray-50'"
   ></canvas>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { isDark } from '../services/theme';
 
 const canvasRef = ref(null);
 let ctx = null;
@@ -105,18 +107,23 @@ class Particle {
     let currentSize = this.size;
     
     if (this.isShining) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + this.shine * 0.7})`;
+        // Shine color adapts to theme
+        const shineColor = isDark.value ? '255, 255, 255' : '100, 100, 255';
+        ctx.fillStyle = `rgba(${shineColor}, ${0.3 + this.shine * 0.7})`;
         currentSize = this.size * (1 + this.shine * 0.5);
         
         // Add glow when shining
         if (this.shine > 0.5) {
             ctx.shadowBlur = 10 * this.shine;
-            ctx.shadowColor = '#ffffff';
+            ctx.shadowColor = isDark.value ? '#ffffff' : '#6366f1';
         } else {
             ctx.shadowBlur = 0;
         }
     } else {
-        ctx.fillStyle = `rgba(100, 108, 255, 0.3)`;
+        // Base color adapts to theme
+        ctx.fillStyle = isDark.value 
+            ? `rgba(100, 108, 255, 0.3)` // Dark Mode: Blue-ish particles
+            : `rgba(99, 102, 241, 0.4)`; // Light Mode: Indigo particles (darker)
         ctx.shadowBlur = 0;
     }
 
@@ -143,7 +150,8 @@ const initParticles = () => {
 
 // --- AMBIENT UPDATE ---
 const updateAndDrawlights = () => {
-   lights.forEach(light => {
+   // Draw lights in both modes now, but adjust intensity
+   lights.forEach((light, index) => {
       light.x += light.vx;
       light.y += light.vy;
       
@@ -151,10 +159,22 @@ const updateAndDrawlights = () => {
       if (light.x < 0 || light.x > canvasRef.value.width) light.vx *= -1;
       if (light.y < 0 || light.y > canvasRef.value.height) light.vy *= -1;
       
-      // Draw
+      // Dynamic colors based on theme
+      let startColor, stopColor;
+      
+      if (isDark.value) {
+          // Dark Mode: Original subtle glow
+          startColor = index === 0 ? 'rgba(100, 0, 255, 0.15)' : 'rgba(0, 255, 255, 0.12)';
+          stopColor = 'rgba(0,0,0,0)'; 
+      } else {
+          // Light Mode: Softer, slightly more visible on white (Indigo/Teal)
+          startColor = index === 0 ? 'rgba(99, 102, 241, 0.08)' : 'rgba(20, 184, 166, 0.08)';
+          stopColor = 'rgba(255,255,255,0)';
+      }
+
       const g = ctx.createRadialGradient(light.x, light.y, 0, light.x, light.y, light.radius);
-      g.addColorStop(0, light.colorStart);
-      g.addColorStop(1, light.colorStop);
+      g.addColorStop(0, startColor);
+      g.addColorStop(1, stopColor);
       
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, canvasRef.value.width, canvasRef.value.height);
@@ -181,7 +201,9 @@ const drawConnections = () => {
             const dist = Math.sqrt(dx*dx + dy*dy);
             if (dist < threshold) {
                 const opacity = 1 - (dist / threshold);
-                ctx.strokeStyle = `rgba(100, 150, 255, ${opacity * 0.2})`;
+                // Line color adapts to theme
+                const color = isDark.value ? '100, 150, 255' : '99, 102, 241';
+                ctx.strokeStyle = `rgba(${color}, ${opacity * 0.2})`;
                 ctx.beginPath();
                 ctx.moveTo(p1.x, p1.y);
                 ctx.lineTo(p2.x, p2.y);
@@ -206,7 +228,7 @@ const updateAndDrawTrails = () => {
     if (trails.value.length < 3) return;
 
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(0, 255, 255, 0.6)`;
+    ctx.strokeStyle = isDark.value ? `rgba(0, 255, 255, 0.6)` : `rgba(79, 70, 229, 0.6)`;
     ctx.lineWidth = 2.0;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -229,6 +251,8 @@ const updateAndDrawTrails = () => {
 
 const animate = () => {
   if (!canvasRef.value) return;
+  
+  // Clear logic depends on theme? No, standard clear.
   ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
   
   // 1. Draw Background Lights

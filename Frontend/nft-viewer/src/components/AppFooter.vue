@@ -22,13 +22,13 @@ const shouldShow = () => {
           <div class="flex items-center gap-3 mb-4">
             <img 
               src="/dcivs-logo.png" 
-              alt="DCIVS" 
+              alt="(formerly known as DCIVS)" 
               class="h-10 w-auto object-contain"
             />
           </div>
           <p class="text-gray-400 text-sm leading-relaxed mb-4">
-            Decentralized Academic Credential Registry and Integrity-Proof Platform. 
-            Anchor credential records on blockchain, enable independent integrity inspection.
+            Decentralized Academic Achievement Registry and Integrity-Proof Platform. 
+            Anchor achievement records on blockchain, enable independent integrity inspection.
           </p>
           <p class="text-gray-500 text-xs">
             ⚠️ This is a technical demonstration and does not claim institutional authority.
@@ -45,18 +45,13 @@ const shouldShow = () => {
               </router-link>
             </li>
             <li>
-              <router-link to="/verify" class="text-gray-400 hover:text-white text-sm transition-colors">
-                Inspect Record
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/view-gallery" class="text-gray-400 hover:text-white text-sm transition-colors">
-                Public Gallery
-              </router-link>
-            </li>
-            <li>
               <router-link to="/login" class="text-gray-400 hover:text-white text-sm transition-colors">
                 Student Login
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/about" class="text-gray-400 hover:text-white text-sm transition-colors">
+                About Us
               </router-link>
             </li>
           </ul>
@@ -85,7 +80,7 @@ const shouldShow = () => {
       <!-- Bottom Bar -->
       <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
         <p class="text-gray-500 text-sm">
-          © {{ currentYear }} DCIVS. Academic Project Demonstration.
+          © {{ currentYear }} (formerly known as DCIVS). Academic Project Demonstration.
         </p>
         <div class="flex items-center gap-6">
           <a href="https://github.com" target="_blank" class="text-gray-400 hover:text-white transition-colors">

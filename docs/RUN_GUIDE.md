@@ -1,125 +1,226 @@
-# Project Execution Guide
+# 🚀 Project Deployment & Run Guide
 
-This document explains how to set up and run the different components of the project.
+> **University NFT Certificate System (DCIVS)**  
+> Complete setup and deployment instructions
+
+---
 
 ## 📋 Prerequisites
-- **Node.js**: v18 or higher recommended.
-- **PostgreSQL**: Ensure the database is running and configured in `backend/.env`.
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Node.js | v18+ | Runtime |
+| npm | v9+ | Package manager |
+| Git | Any | Version control |
+
+**No PostgreSQL needed** - Uses Supabase (cloud database)  
+**No Ethereum wallet needed** - Uses local Hardhat blockchain
 
 ---
 
-## 🕹️ Command Center (IDE Workflow)
+## ⚡ Quick Start (One Command)
 
-This project has been optimized for **VS Code** (or any IDE with terminal tabs). You can run the entire stack using simple `npm run` commands from the **root directory**.
-
-### 1. Setup (First Run Only)
-Installs dependencies for all 4 project components (Root, Backend, Frontend, Hardhat).
 ```bash
-npm run setup
+# From project root directory
+npm run start-all
+# OR
+.\run_app.bat
 ```
 
-### 2. Launch the System
-Open **4 Terminal Tabs** in your IDE and run one command in each:
-
-| Terminal Tab | Command | Description | Port |
-| :--- | :--- | :--- | :--- |
-| **1. Blockchain** | `npm run chain` | Starts the local Hardhat Node. | `8545` |
-| **2. Operations** | `npm run ops-deploy` | Deploys contracts to the local node. | - |
-| **3. Backend** | `npm run backend` | Starts the API Server. | `3001` |
-| **4. Frontend** | `npm run frontend` | Starts the Vue Client. | `5173` |
-
-> **Note:** Always start the **Chain** before deploying contracts or running the backend.
+This launches **4 terminal windows**:
+1. 🔗 Hardhat blockchain node
+2. 📜 Contract deployment terminal
+3. 🖥️ Backend server (port 3001)
+4. 🌐 Frontend (port 5173)
 
 ---
 
-## 🛠️ Debugging
-- If you see `EADDRINUSE: address already in use :::3001`, check if another instance of the backend is running.
+## 🛠️ Manual Setup
+
+### Step 1: Install Dependencies
+
+```bash
+# Root dependencies
+npm install
+
+# Backend
+cd backend && npm install && cd ..
+
+# Frontend
+cd Frontend/nft-viewer && npm install && cd ../..
+
+# Blockchain
+cd my-hardhat-project && npm install && cd ..
+```
+
+### Step 2: Configure Environment
+
+Copy the example env file:
+```bash
+copy backend\.env.example backend\.env
+```
+
+Required variables in `backend/.env`:
+```env
+# Pinata (IPFS) - Get from pinata.cloud
+PINATA_API_KEY=your_key
+PINATA_API_SECRET=your_secret
+
+# Supabase - Get from supabase.com
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your_anon_key
+
+# JWT Secret (any random string)
+JWT_SECRET=your_random_secret_string
+
+# Hardhat (local blockchain) - DO NOT CHANGE
+ADMIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+NFT_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+RPC_URL=http://127.0.0.1:8545
+
+# Email (Optional - for notifications)
+GMAIL_USER=your@gmail.com
+GMAIL_APP_PASSWORD=your_app_password
+```
+
+### Step 3: Start Services
+
+**Terminal 1 - Blockchain:**
+```bash
+cd my-hardhat-project
+npx hardhat node
+```
+
+**Terminal 2 - Deploy Contract:**
+```bash
+cd my-hardhat-project
+npx hardhat run scripts/deploy-nft.js --network localhost
+```
+
+**Terminal 3 - Backend:**
+```bash
+cd backend
+npm start
+```
+
+**Terminal 4 - Frontend:**
+```bash
+cd Frontend/nft-viewer
+npm run dev
+```
+
 ---
 
-## 🌐 Navigation Guide (Pages)
-The frontend application runs on `http://localhost:5173`.
+## 🌐 Access Points
 
-| Page | URL Path | Description |
-| :--- | :--- | :--- |
-| **Registration** | `/register` | Default landing page. Register as a new student. |
-| **Wallet Dashboard** | `/wallet` | Manage your encrypted wallet (Create/Unlock). |
-| **Student Dashboard** | `/student-dashboard` | View your personal academic profile. |
-| **Public Gallery Search** | `/login` | Search for NFTs belonging to any wallet address. |
-| **NFT Gallery** | `/gallery` | The visual results page for NFT searches. |
-| **Admin Login** | `/admin-login` | Authorized access for university administrators. |
-| **Admin Dashboard** | `/admin-dashboard` | Manage students and issue certificates. |
-| **3D Viewer** | `/babylon` | Experimental 3D visualization of NFT assets. |
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Frontend | http://localhost:5173 | Register new account |
+| Backend API | http://localhost:3001 | - |
+| Blockchain | http://localhost:8545 | - |
+| Admin Login | http://localhost:5173/admin-login | `backup_admin@test.com` / `admin_backup_123` |
 
 ---
 
-## 🧪 How to Test Functionalities
+## 📱 Application Flow
 
-### 1. Student Registration & Login
-1. Go to `/register`.
-2. Fill in the full name, email, password (min 6 chars), and student details.
-3. Submit the form. On success, you will be redirected to the **Wallet Dashboard**.
-4. *Verification*: Check the `students` table in your PostgreSQL database to see the new entry.
+### Student Flow
+1. **Register** → `/register` - Create student account
+2. **Create Wallet** → `/wallet` - Generate encrypted wallet
+3. **View Certificates** → `/student-dashboard` - See issued NFTs
 
-### 2. Wallet Creation & Encryption
-1. After registration, stay on `/wallet`.
-2. Enter a **Wallet Password** (this is different from your login password).
-3. Click **Create My Wallet**.
-4. *Verification*: The backend generates a random private key, encrypts it with your password, and saves the **Public Address** and **Encrypted JSON** to the database.
+### Admin Flow
+1. **Login** → `/admin-login` - Admin authentication
+2. **Dashboard** → `/admin-dashboard` - Overview tab
+3. **Issue Certificate** → Click "Issue Certificate" tab
+4. **Batch Operations** → Click "Batch Operations" tab (CSV upload)
 
-### 3. Unlocking and Viewing Assets
-1. Once a wallet exists, go to `/wallet`. You will see it is "Locked".
-2. Enter the wallet password you set earlier and click **Unlock**.
-3. *Verification*: The frontend decrypts the wallet locally using `ethers.js`. If valid, it will fetch and display "My Certificates".
+### Verification Flow
+1. **Public Verify** → `/verify/:tokenId` - Anyone can verify
+2. **QR Code** → Scan QR from certificate
 
-### 4. Admin Management & Certificate Issuance
-1. Go to `/admin-login`.
-2. Use the credentials:
-   - **Email**: `admin@example.com`
-   - **Password**: `admin123`
-3. Navigate to **Issue Certificate** section inside the Admin Dashboard.
-4. **The Flow**:
-   - Select a student from the dropdown (these are real students fetched from your DB).
-   - Enter a **Title** for the certificate (e.g., "B.Sc Graduation").
-   - Choose a **File** (image/PDF) to be the certificate.
-   - Click **Mint & Transfer NFT**.
-5. **Backend Action**:
-   - The server uploads the file to **Pinata (IPFS)**.
-   - It creates a metadata JSON and pins it as well.
-   - It **automatically signs** the transaction using the `ADMIN_PRIVATE_KEY` (No MetaMask popup needed!).
-   - The NFT is minted directly to the student's Ethereum address stored in the DB.
+---
 
-### 5. Automated Asset Tracking
-1. After the Admin Successful Minting message appears, log in as the **Student**.
-2. Go to the **Wallet Dashboard** and **Unlock** the wallet.
-3. Your new certificate will automatically appear under "My Certificates".
-4. *Verification*: The asset is loaded from the backend `nfts` table (for speed) and verified against the blockchain.
+## 🧪 Testing
 
-### 6. Public NFT Verification
-1. Go to `/login` (Public Search).
-2. Paste the student's wallet address.
-3. Click **View Gallery**.
-4. *Verification*: The app displays all NFTs minted to that address directly from the blockchain node.
+```bash
+cd backend
 
-## 🗄️ Database Schema (Reference)
-The system uses a normalized PostgreSQL schema. If debugging query issues, refer to this structure:
+# Run all tests
+npm test
 
-### 1. `students` (User Accounts)
-- `id`: Primary Key
-- `full_name`: Student Name
-- `email`: Login Email
-- `ethereum_address`: The custodial wallet address
+# Run with coverage
+npm run test:coverage
 
-### 2. `wallets` (Keystore Storage)
-- `user_id`: Link to `students.id`
-- `encrypted_json`: The scrypt-encrypted private key string
-- `public_address`: Redundant lookup field
+# Run specific test
+npm test -- email.test.js
+```
 
-### 3. `certificates` (The "Linker" Table)
-- `id`: Primary Key
-- `recipient_id`: Link to `students.id` (This connects an asset to a user)
+---
 
-### 4. `nfts` (Blockchain Registry)
-- `token_id`: On-chain ID (BigInt)
-- `ipfs_cid`: The hash of the metadata/image (Source of Truth for "Token URI")
-- `transaction_hash`: Blockchain proof
-- `certificate_id`: Link to `certificates.id` (NOT student_id directly)
+## 📁 Project Structure
+
+```
+Project/
+├── backend/           # Express.js API
+│   ├── controllers/   # Business logic
+│   ├── routes/        # API endpoints
+│   ├── services/      # Email, blockchain
+│   ├── tests/         # Jest tests
+│   └── server.js      # Entry point
+├── Frontend/
+│   └── nft-viewer/    # Vue.js app
+├── my-hardhat-project/# Blockchain
+│   ├── contracts/     # Solidity
+│   └── scripts/       # Deploy scripts
+├── docs/              # Documentation
+└── run_app.bat        # Quick start
+```
+
+---
+
+## ❗ Troubleshooting
+
+### "EADDRINUSE: address already in use"
+```bash
+# Kill process on port 3001
+netstat -ano | findstr :3001
+taskkill /PID <pid> /F
+```
+
+### "Blockchain not connected"
+1. Check Hardhat node is running on port 8545
+2. Verify `RPC_URL` in `.env` is `http://127.0.0.1:8545`
+
+### "Contract not deployed"
+```bash
+cd my-hardhat-project
+npx hardhat run scripts/deploy-nft.js --network localhost
+```
+Copy the output address to `NFT_CONTRACT_ADDRESS` in `.env`
+
+### "Stale certificates after restart"
+When Hardhat restarts, blockchain resets. Certificates minted before restart won't exist. This is expected for development.
+
+---
+
+## 🔒 Admin Credentials
+
+**Backup Admin** (always works):
+- Email: `backup_admin@test.com`
+- Password: `admin_backup_123`
+
+**Database Admin** (requires Supabase setup):
+- Create in `admins` table with bcrypt-hashed password
+
+---
+
+## 💰 Cost Breakdown
+
+| Service | Cost |
+|---------|------|
+| Hardhat (blockchain) | **FREE** - Local |
+| Supabase (database) | **FREE** - 500MB tier |
+| Pinata (IPFS) | **FREE** - 1GB tier |
+| Gmail SMTP | **FREE** - 500/day |
+| **Total** | **$0** |
