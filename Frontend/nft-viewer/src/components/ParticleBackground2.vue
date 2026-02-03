@@ -60,15 +60,23 @@ class Particle {
     this.x += this.vx + paraX;
     this.y += this.vy + paraY;
 
-    // Mouse Repulsion
+    // Mouse Interaction (Repel/Attract)
     if (mouse.x && mouse.y) {
       const dx = mouse.x - this.x;
       const dy = mouse.y - this.y;
       const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < 150) {
-         const force = (150 - dist) / 150;
-         this.vx -= (dx/dist) * force * 0.5;
-         this.vy -= (dy/dist) * force * 0.5;
+      
+      // Zone 1: Repel (Close range)
+      if (dist < 100) {
+         const force = (100 - dist) / 100;
+         this.vx -= (dx/dist) * force * 0.8; // Stronger repel
+         this.vy -= (dy/dist) * force * 0.8;
+      } 
+      // Zone 2: Attract (Mid range) - subtle "magnetic" pull
+      else if (dist < 200) {
+         const force = (200 - dist) / 200;
+         this.vx += (dx/dist) * force * 0.05; 
+         this.vy += (dy/dist) * force * 0.05;
       }
     }
     

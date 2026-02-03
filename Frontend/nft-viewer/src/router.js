@@ -1,23 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// 1. Views
-import LandingPage from './views/LandingPage.vue'
-import RegistrationPage from './views/RegistrationPage.vue'
-import LoginPage from './views/LoginPage.vue'
-import AdminLogin from './views/AdminLogin.vue'
-import WalletDashboard from './views/WalletDashboard.vue'
-import StudentDashboard from './views/StudentDashboard.vue'
-import AdminDashboard from './views/AdminDashboard.vue'
-import NFTGallery from './views/NFTGallery.vue'
-import BabylonScene from './views/BabylonScene.vue'
-import PublicGallerySearch from './views/PublicGallerySearch.vue'
-import VerifyCertificate from './views/VerifyCertificate.vue'
-import SettingsPage from './views/SettingsPage.vue'
+
 
 const routes = [
-  { path: '/', name: 'Home', component: LandingPage },
-  { path: '/register', name: 'Register', component: RegistrationPage },
-  { path: '/login', name: 'Login', component: LoginPage },
+  { path: '/', name: 'Home', component: () => import('./views/LandingPage.vue') },
+  { path: '/register', name: 'Register', component: () => import('./views/RegistrationPage.vue') },
+  { path: '/login', name: 'Login', component: () => import('./views/LoginPage.vue') },
   // Student Portal Routes (Nested)
   {
     path: '/student',
@@ -25,9 +13,9 @@ const routes = [
     redirect: '/student/dashboard',
     meta: { layoutKey: 'student_portal' },
     children: [
-      { path: 'dashboard', name: 'StudentDashboard', component: StudentDashboard },
-      { path: 'wallet', name: 'WalletDashboard', component: WalletDashboard },
-      { path: 'settings', name: 'Settings', component: SettingsPage }
+      { path: 'dashboard', name: 'StudentDashboard', component: () => import('./views/StudentDashboard.vue') },
+      { path: 'wallet', name: 'WalletDashboard', component: () => import('./views/WalletDashboard.vue') },
+      { path: 'settings', name: 'Settings', component: () => import('./views/SettingsPage.vue') }
     ]
   },
   
@@ -35,19 +23,19 @@ const routes = [
   { path: '/student-dashboard', redirect: '/student/dashboard' },
   { path: '/wallet', redirect: '/student/wallet' },
   { path: '/settings', redirect: '/student/settings' },
-  { path: '/view-gallery', name: 'PublicSearch', component: PublicGallerySearch },
+  { path: '/view-gallery', name: 'PublicSearch', component: () => import('./views/PublicGallerySearch.vue') },
   {
     path: '/gallery',
     name: 'Gallery',
-    component: NFTGallery,
+    component: () => import('./views/NFTGallery.vue'),
     props: route => ({ address: route.query.address })
   },
-  { path: '/admin-login', name: 'AdminLogin', component: AdminLogin },
-  { path: '/admin-dashboard', name: 'AdminDashboard', component: AdminDashboard },
-  { path: '/babylon', name: 'BabylonScene', component: BabylonScene },
+  { path: '/admin-login', name: 'AdminLogin', component: () => import('./views/AdminLogin.vue') },
+  { path: '/admin-dashboard', name: 'AdminDashboard', component: () => import('./views/AdminDashboard.vue') },
+  { path: '/babylon', name: 'BabylonScene', component: () => import('./views/BabylonScene.vue') },
 // Inspection routes (public)
-  { path: '/verify', name: 'VerifySearch', component: VerifyCertificate },
-  { path: '/verify/:tokenId', name: 'VerifyCertificate', component: VerifyCertificate },
+  { path: '/verify', name: 'VerifySearch', component: () => import('./views/VerifyCertificate.vue') },
+  { path: '/verify/:tokenId', name: 'VerifyCertificate', component: () => import('./views/VerifyCertificate.vue') },
   { path: '/inspect', redirect: '/verify' },
   { path: '/inspect/:tokenId', redirect: to => `/verify/${to.params.tokenId}` },
   

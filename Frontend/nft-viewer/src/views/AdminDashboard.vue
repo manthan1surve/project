@@ -6,11 +6,20 @@ import BatchOperations from '../components/admincomponents/BatchOperations.vue' 
 import { isDark, toggleTheme } from '../services/theme'
 import ThemeToggle from '../components/ThemeToggle.vue'
 import ParticleBackground2 from '../components/ParticleBackground2.vue'
+import AudioService from '../services/audio'
+import AnalyticsChart from '../components/admincomponents/AnalyticsChart.vue'
+import { exportToCSV, exportToJSON } from '../services/exportService'
 
 // Initialize router instance
 const router = useRouter()
+
+function playClick() {
+  AudioService.playClick()
+}
+
 // State to track the currently selected tab in the UI
 const activeTab = ref('dashboard')
+const searchQuery = ref('') // Search state
 // Reactive arrays to hold fetched data
 const students = ref([])
 const certificates = ref([])
@@ -40,6 +49,24 @@ const settingsState = reactive({
 // Computed properties for dashboard summary statistics
 const totalStudents = computed(() => students.value.length)
 const totalIssued = computed(() => certificates.value.length)
+
+// Smart Search Logic
+const filteredCertificates = computed(() => {
+  if (!searchQuery.value) return certificates.value
+  
+  const query = searchQuery.value.toLowerCase()
+  return certificates.value.filter(cert => {
+    const name = (cert.student?.full_name || cert.student_name || '').toLowerCase()
+    const title = (cert.title || '').toLowerCase()
+    const tokenId = (cert.tokenId || '').toString()
+    const date = new Date(cert.issue_date || cert.created_at).toLocaleDateString().toLowerCase()
+    
+    return name.includes(query) || 
+           title.includes(query) || 
+           tokenId.includes(query) ||
+           date.includes(query)
+  })
+})
 
 const API_BASE = 'http://localhost:3001'
 
@@ -176,6 +203,7 @@ async function toggleRevocation(cert) {
     
     if (res.ok) {
       cert.isRevoked = !cert.isRevoked
+      AudioService.playSuccess()
       alert(`Certificate ${action}d successfully!`)
     } else {
       const data = await res.json()
@@ -183,6 +211,7 @@ async function toggleRevocation(cert) {
     }
   } catch (err) {
     console.error(`${action} error:`, err)
+    AudioService.playError()
     alert(`Failed to ${action} certificate: ${err.message}`)
   } finally {
     cert.processing = false
@@ -270,7 +299,7 @@ function setTheme(dark) {
         <button 
           v-for="tab in ['dashboard', 'issue', 'batch', 'logs', 'settings']"
           :key="tab"
-          @click="activeTab = tab"
+          @click="playClick(); activeTab = tab"
           :class="activeTab === tab 
             ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' 
             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1b2127]'"
@@ -304,6 +333,38 @@ function setTheme(dark) {
         
         <!-- DASHBOARD TAB -->
         <div v-if="activeTab === 'dashboard'" class="space-y-8 animate-fade-in">
+          <!-- Compliance & Exports -->
+          <div class="flex items-center justify-between glass-panel p-4 rounded-xl border border-blue-200/50 dark:border-indigo-500/20">
+             <div class="flex items-center gap-3">
+               <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                 </svg>
+               </div>
+               <div>
+                 <h4 class="font-bold text-gray-900 dark:text-white">Audit & Compliance</h4>
+                 <p class="text-xs text-gray-500">Download cryptographically signed records</p>
+               </div>
+             </div>
+             <div class="flex gap-2">
+               <button 
+                 @click="exportToCSV(certificates)" 
+                 class="px-4 py-2 bg-white dark:bg-[#283039] border border-gray-200 dark:border-[#3b4754] text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+               >
+                 <span>📊</span> CSV
+               </button>
+               <button 
+                 @click="exportToJSON(certificates)" 
+                 class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+               >
+                 <span>📦</span> JSON
+               </button>
+             </div>
+          </div>
+
+          <!-- Analytics Chart (New) -->
+          <AnalyticsChart :certificates="certificates" />
+
           <!-- Stats -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="p-6 glass-panel rounded-2xl shadow-sm">
@@ -318,8 +379,17 @@ function setTheme(dark) {
 
           <!-- Recent Activity Table -->
           <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
-             <div class="px-6 py-4 border-b border-transparent">
+             <div class="px-6 py-4 border-b border-transparent flex flex-col md:flex-row md:items-center justify-between gap-4">
                <h3 class="font-bold text-gray-900 dark:text-white">Recent Registrations</h3>
+               <div class="relative">
+                 <input 
+                   v-model="searchQuery"
+                   type="text" 
+                   placeholder="Search student, token, date..." 
+                   class="glass-input pl-10 pr-4 py-2 rounded-lg text-sm w-full md:w-64"
+                 />
+                 <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+               </div>
              </div>
              <div class="overflow-x-auto">
                <table class="w-full text-left">
@@ -334,7 +404,7 @@ function setTheme(dark) {
                    </tr>
                  </thead>
                  <tbody class="divide-y divide-gray-200 dark:divide-[#283039]">
-                   <tr v-for="cert in certificates" :key="cert.id" class="hover:bg-gray-50 dark:hover:bg-[#1b2127]/50 transition">
+                   <tr v-for="cert in filteredCertificates" :key="cert.id" class="hover:bg-gray-50 dark:hover:bg-[#1b2127]/50 transition">
                      <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ cert.student?.full_name || cert.student_name || 'Unknown' }}</td>
                      <td class="px-6 py-4 text-gray-600 dark:text-gray-300">{{ cert.title }}</td>
                      <td class="px-6 py-4 font-mono text-gray-500 dark:text-gray-400">{{ cert.tokenId ? `#${cert.tokenId}` : 'N/A' }}</td>
@@ -386,8 +456,10 @@ function setTheme(dark) {
                        </div>
                      </td>
                    </tr>
-                   <tr v-if="certificates.length === 0">
-                     <td colspan="6" class="px-6 py-8 text-center text-gray-500">No certificates issued yet.</td>
+                   <tr v-if="filteredCertificates.length === 0">
+                     <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                       {{ searchQuery ? 'No matching records found.' : 'No certificates issued yet.' }}
+                     </td>
                    </tr>
                  </tbody>
                </table>

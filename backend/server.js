@@ -245,6 +245,45 @@ app.post("/api/wallet/create", authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * Import an existing wallet (Recovery)
+ * Receives the public_address and encrypted_json generated/recovered on client-side.
+ */
+app.post("/api/wallet/import", authenticateToken, async (req, res) => {
+  try {
+    const { address, encryptedJson } = req.body;
+
+    if (!address || !encryptedJson) {
+      return res.status(400).json({ error: "Address and Encrypted Keystore are required." });
+    }
+
+    const student = await getStudentById(req.user.id);
+    if (!student) return res.status(404).json({ error: "User not found." });
+
+    // Upsert the wallet
+    const { data, error } = await supabase
+        .from('wallets')
+        .upsert({
+            user_id: student.id,
+            public_address: address,
+            encrypted_json: encryptedJson,
+            updated_at: new Date()
+        }, { onConflict: 'user_id' })
+        .select('id, user_id, public_address')
+        .single();
+
+    if (error) throw error;
+
+    res.json({
+      message: "Wallet imported successfully.",
+      wallet: { id: data.id, public_address: data.public_address },
+    });
+  } catch (error) {
+    console.error("Error importing wallet:", error);
+    res.status(500).json({ error: "Failed to import wallet." });
+  }
+});
+
 // Endpoint to fetch the student's encrypted wallet for client-side unlocking
 // Endpoint to fetch the student's encrypted wallet for client-side unlocking
 app.get("/api/wallet/me", authenticateToken, async (req, res) => {

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { isDark, toggleTheme } from '../services/theme';
 import ThemeToggle from '../components/ThemeToggle.vue';
 import { Wallet } from 'ethers'; // Ethers.js for local wallet management
+import AudioService from '../services/audio';
 
 const router = useRouter();
 
@@ -263,11 +264,79 @@ const shortAddress = computed(() => {
 const selectedAsset = ref(null);
 
 function openModal(asset) {
+  AudioService.playClick();
   selectedAsset.value = asset;
 }
 
 function closeModal() {
   selectedAsset.value = null;
+}
+
+// --- Wallet Backup & Recovery (Idea 4) ---
+const showBackup = ref(false);
+const revealMnemonic = ref(false);
+const backupPhrase = ref('');
+const recoveryMode = ref(false);
+const recoveryPhrase = ref('');
+
+async function startBackup() {
+  if (!password.value) {
+    alert("Please enter your password in the unlock field first (or we would typically prompt again here).");
+    return;
+  }
+  isBusy.value = true;
+  try {
+    const wallet = await Wallet.fromEncryptedJson(encryptedJson.value, password.value);
+    // In ethers v6, mnemonic is an object or null
+    backupPhrase.value = wallet.mnemonic?.phrase || "No mnemonic found for this wallet (Legacy).";
+    showBackup.value = true;
+  } catch (err) {
+    alert("Error revealing phrase: " + err.message);
+  } finally {
+    isBusy.value = false;
+  }
+}
+
+async function handleRecovery() {
+  if (!recoveryPhrase.value || !password.value) {
+    error.value = "Recovery phrase and a new password are required.";
+    return;
+  }
+  
+  isBusy.value = true;
+  error.value = '';
+  try {
+    // 1. Recreate wallet from phrase
+    const wallet = Wallet.fromPhrase(recoveryPhrase.value.trim());
+    
+    // 2. Encrypt with new password
+    const newEncryptedJson = await wallet.encrypt(password.value);
+    
+    // 3. Save to backend (upsert) using our new import endpoint
+    const res = await fetch(`${API_BASE_URL}/api/wallet/import`, {
+      method: 'POST',
+      headers: apiHeaders.value,
+      body: JSON.stringify({ 
+        address: wallet.address,
+        encryptedJson: newEncryptedJson
+      }),
+    });
+    
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to import wallet.");
+    }
+
+    alert("Wallet recovered successfully! Please log in with your new password.");
+    recoveryMode.value = false;
+    recoveryPhrase.value = '';
+    await loadWallet();
+
+  } catch (err) {
+    error.value = "Recovery failed: " + err.message;
+  } finally {
+    isBusy.value = false;
+  }
 }
 
 function openVerification(hash) {
@@ -355,7 +424,7 @@ function getIpfsUrl(cid) {
             Please log in to access your wallet.
           </div>
 
-          <div v-else-if="status === 'no-wallet'" class="max-w-2xl mx-auto glass-panel rounded-2xl p-8 shadow-xl transition-all duration-300">
+          <div v-else-if="status === 'no-wallet' && !recoveryMode" class="max-w-2xl mx-auto glass-panel rounded-2xl p-8 shadow-xl transition-all duration-300">
             <h2 class="text-gray-900 dark:text-white tracking-tight text-3xl font-bold text-center mb-4 transition-colors">
               Secure Your Digital Identity
             </h2>
@@ -384,7 +453,7 @@ function getIpfsUrl(cid) {
             </button>
           </div>
 
-          <div v-else-if="status === 'locked'" class="max-w-md mx-auto glass-panel rounded-2xl p-8 mt-10 shadow-xl transition-all duration-300">
+          <div v-else-if="status === 'locked' && !recoveryMode" class="max-w-md mx-auto glass-panel rounded-2xl p-8 mt-10 shadow-xl transition-all duration-300">
             <h2 class="text-gray-900 dark:text-white tracking-tight text-3xl font-bold text-center mb-4 transition-colors">
               Welcome Back
             </h2>
@@ -410,11 +479,57 @@ function getIpfsUrl(cid) {
             <button
               @click="unlockWallet"
               :disabled="isBusy"
-              class="flex w-full cursor-pointer items-center justify-center rounded-xl h-12 px-6 bg-sky-600 hover:bg-sky-700 text-white text-base font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-sky-500/30"
+              class="flex w-full cursor-pointer items-center justify-center rounded-xl h-12 px-6 bg-sky-600 hover:bg-sky-700 text-white text-base font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-sky-500/30 mb-4"
             >
               <span v-if="!isBusy">Unlock</span>
               <span v-else>Unlocking...</span>
             </button>
+
+            <div class="text-center">
+              <button @click="recoveryMode = true" class="text-sky-600 hover:underline text-sm font-medium">Lost password? Recover with Seed Phrase</button>
+            </div>
+          </div>
+
+          <!-- RECOVERY MODE UI -->
+          <div v-else-if="recoveryMode" class="max-w-md mx-auto glass-panel rounded-2xl p-8 mt-10 shadow-xl transition-all duration-300 animate-fadeIn">
+            <h2 class="text-gray-900 dark:text-white tracking-tight text-3xl font-bold text-center mb-4 transition-colors">
+              Recover Wallet
+            </h2>
+            <p class="text-gray-500 dark:text-gray-400 text-center mb-6 transition-colors">
+              Enter your 12-word recovery phrase and a new password to restore your digital identity.
+            </p>
+
+            <label class="flex flex-col w-full mb-4">
+              <span class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 transition-colors">Recovery Phrase (12 Words)</span>
+              <textarea
+                v-model="recoveryPhrase"
+                placeholder="word1 word2 ... word12"
+                class="flex w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-gray-300 dark:border-[#3b4754] bg-gray-50 dark:bg-transparent h-24 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 py-2 text-base font-normal transition-all"
+              ></textarea>
+            </label>
+
+            <label class="flex flex-col w-full mb-4">
+              <span class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 transition-colors">New Wallet Password</span>
+              <input
+                v-model="password"
+                type="password"
+                placeholder="Enter new password"
+                class="flex w-full rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 border border-gray-300 dark:border-[#3b4754] bg-gray-50 dark:bg-transparent h-12 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 text-base font-normal transition-all"
+              />
+            </label>
+
+            <button
+              @click="handleRecovery"
+              :disabled="isBusy"
+              class="flex w-full cursor-pointer items-center justify-center rounded-xl h-12 px-6 bg-sky-600 hover:bg-sky-700 text-white text-base font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-sky-500/30 mb-4"
+            >
+              <span v-if="!isBusy">Restore Wallet</span>
+              <span v-else>Restoring...</span>
+            </button>
+
+            <div class="text-center">
+              <button @click="recoveryMode = false" class="text-gray-500 hover:underline text-sm font-medium">Back to Login</button>
+            </div>
           </div>
 
           <div v-else-if="status === 'unlocked'" class="max-w-7xl mx-auto">
@@ -450,6 +565,12 @@ function getIpfsUrl(cid) {
                       d="M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2M9 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6M9 5h6a2 2 0 0 1 2 2v6"
                     />
                   </svg>
+                </button>
+                <button
+                  @click="startBackup"
+                  class="px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-700/50 hover:bg-amber-200 transition-colors flex items-center gap-2"
+                >
+                  <span>🛡️</span> Backup
                 </button>
               </div>
             </div>
@@ -609,7 +730,46 @@ function getIpfsUrl(cid) {
         </div>
       </div>
     </div>
+    <!-- WALLET BACKUP MODAL -->
+    <div v-if="showBackup" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" @click.self="showBackup = false">
+      <div class="bg-white dark:bg-[#1b2127] w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-amber-200 dark:border-amber-900/30 p-8 transition-colors">
+        <h3 class="text-amber-600 dark:text-amber-400 text-xl font-bold mb-2 flex items-center gap-2">
+          <span>🛡️</span> Secret Recovery Phrase
+        </h3>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 uppercase tracking-widest font-bold">
+          Store this securely. Never share it.
+        </p>
 
+        <div v-if="!revealMnemonic" class="bg-gray-100 dark:bg-black rounded-xl p-8 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-800">
+           <p class="text-gray-400 text-xs text-center mb-4 italic">Pressing this will reveal your 12-word recovery phrase. Ensure no one is watching.</p>
+           <button @click="revealMnemonic = true" class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-transform hover:scale-105">
+             Reveal Phrase
+           </button>
+        </div>
+
+        <div v-else class="animate-fadeIn">
+           <div class="grid grid-cols-3 gap-2 mb-6">
+              <div v-for="(word, i) in backupPhrase.split(' ')" :key="i" class="bg-gray-50 dark:bg-[#111418] p-2 rounded-lg border border-gray-200 dark:border-[#283039] text-center">
+                 <span class="text-[10px] text-gray-400 block">{{ i + 1 }}</span>
+                 <span class="font-mono text-sm text-gray-900 dark:text-white font-bold">{{ word }}</span>
+              </div>
+           </div>
+           
+           <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-900/30 mb-6">
+              <p class="text-red-600 dark:text-red-400 text-xs leading-relaxed">
+                <strong>WARNING:</strong> Anyone with these words can steal your entire wallet. Write them down on paper and hide them. Do not save them on your computer or phone.
+              </p>
+           </div>
+        </div>
+
+        <button 
+          @click="showBackup = false; revealMnemonic = false" 
+          class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl transition-colors mt-2"
+        >
+          Finished & Secured
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 

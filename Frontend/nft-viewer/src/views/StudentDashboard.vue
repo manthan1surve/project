@@ -13,7 +13,12 @@
       <div class="p-8 max-w-7xl mx-auto w-full space-y-8 flex-1">
         
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-2 p-6 glass-panel rounded-2xl flex items-center gap-6 transition-all duration-300">
+          <!-- Skeleton Profile -->
+          <div v-if="loading" class="lg:col-span-2 p-6 glass-panel rounded-2xl flex items-center gap-6 transition-all duration-300">
+             <SkeletonCard type="profile" class="w-full" />
+          </div>
+
+          <div v-else class="lg:col-span-2 p-6 glass-panel rounded-2xl flex items-center gap-6 transition-all duration-300">
             <div class="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-3xl shadow-inner">
               🎓
             </div>
@@ -31,7 +36,12 @@
             </div>
           </div>
 
-          <div class="p-6 glass-panel rounded-2xl flex flex-col justify-center transition-all duration-300">
+          <!-- Skeleton Details -->
+          <div v-if="loading" class="p-6 glass-panel rounded-2xl flex flex-col justify-center transition-all duration-300">
+             <SkeletonCard type="text" />
+          </div>
+
+          <div v-else class="p-6 glass-panel rounded-2xl flex flex-col justify-center transition-all duration-300">
              <h4 class="text-gray-400 text-sm font-medium uppercase tracking-wider mb-4">Academic Details</h4>
              <div class="space-y-3">
                <div class="flex justify-between border-b border-gray-100 dark:border-[#283039] pb-2 transition-colors">
@@ -73,8 +83,11 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ThemeToggle from '../components/ThemeToggle.vue'
+import SkeletonCard from '../components/ui/SkeletonCard.vue'
+
 const router = useRouter()
 const student = ref({})
+const loading = ref(true)
 
 async function fetchProfile() {
   const token = localStorage.getItem('token')
@@ -96,6 +109,8 @@ async function fetchProfile() {
     }
   } catch (err) {
     console.error('Profile fetch error:', err)
+  } finally {
+    loading.value = false
   }
 }
 

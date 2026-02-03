@@ -24,5 +24,11 @@
 </template>
 
 <script setup>
-import { isDark, toggleTheme } from '../services/theme'
+import { isDark, toggleTheme as originalToggle } from '../services/theme'
+import AudioService from '../services/audio'
+
+function toggleTheme() {
+  AudioService.playClick()
+  originalToggle()
+}
 </script>

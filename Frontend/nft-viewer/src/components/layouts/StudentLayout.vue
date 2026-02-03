@@ -13,6 +13,7 @@
       <nav class="flex-1 space-y-2">
         <router-link 
           to="/student/dashboard" 
+          @click="playClick"
           class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1b2127] hover:text-gray-900 dark:hover:text-white transition-all text-gray-500 dark:text-gray-400" 
           active-class="bg-gray-100 dark:bg-[#283039] text-gray-900 dark:text-white shadow-sm font-medium"
         >
@@ -20,6 +21,7 @@
         </router-link>
         <router-link 
           to="/student/wallet" 
+          @click="playClick"
           class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1b2127] hover:text-gray-900 dark:hover:text-white transition-all text-gray-500 dark:text-gray-400" 
           active-class="bg-gray-100 dark:bg-[#283039] text-gray-900 dark:text-white shadow-sm font-medium"
         >
@@ -27,6 +29,7 @@
         </router-link>
         <router-link 
           to="/student/settings" 
+          @click="playClick"
           class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#1b2127] hover:text-gray-900 dark:hover:text-white transition-all text-gray-500 dark:text-gray-400" 
           active-class="bg-gray-100 dark:bg-[#283039] text-gray-900 dark:text-white shadow-sm font-medium"
         >
@@ -53,8 +56,13 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import ParticleBackground2 from '../ParticleBackground2.vue'
+import AudioService from '../../services/audio'
 
 const router = useRouter()
+
+function playClick() {
+  AudioService.playClick()
+}
 
 function logout() {
   localStorage.removeItem('token')
